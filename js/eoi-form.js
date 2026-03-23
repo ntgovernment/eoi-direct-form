@@ -1,5 +1,3 @@
-import "../css/eoi-form.css";
-
 document.addEventListener("DOMContentLoaded", function () {
   const commitButton = document.getElementById("sq_commit_button");
 

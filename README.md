@@ -53,12 +53,13 @@ Vite starts at `http://localhost:5173` and opens the reference HTML page automat
 
 The reference HTML (`Directly publish an expression of interest _ NTG Central.html`) is a snapshot of the live Matrix page. For it to work correctly in the local Vite dev server, several modifications are made to the file that differ from the production version. These changes are **never deployed** — they exist only to support local development.
 
-| What                   | Production (Matrix)                                                                              | Local dev (reference HTML)                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| FontAwesome            | Pro CSS loaded via Matrix asset pipeline                                                         | Kit JS: `<script src="https://kit.fontawesome.com/9bf658a5c7.js">`          |
-| jQuery                 | Loaded by Matrix from `https://ntgcentral-dev.nt.gov.au/…/jquery-3.4.1.min.js`                  | Loaded from local `_files/jquery-3.4.1.min.js`                             |
-| `eoi-form.js` loading  | `<script type="text/javascript" src="https://ntgcentral-dev.nt.gov.au/…/git_bridge/…/eoi-form.js">` | `<script type="module" src="/js/eoi-form.js">` (Vite processes it)          |
-| `JSON.parse` in status toolbar | `JSON.parse('')` (Matrix renders an empty string — valid in its server context)         | `JSON.parse('{}')` (prevents `SyntaxError: Unexpected end of JSON input`)   |
+| What                           | Production (Matrix)                                                                                 | Local dev (reference HTML)                                                |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| FontAwesome                    | Pro CSS loaded via Matrix asset pipeline                                                            | Kit JS: `<script src="https://kit.fontawesome.com/9bf658a5c7.js">`        |
+| jQuery                         | Loaded by Matrix from `https://ntgcentral-dev.nt.gov.au/…/jquery-3.4.1.min.js`                      | Loaded from local `_files/jquery-3.4.1.min.js`                            |
+| `eoi-form.css` loading         | `<style href="https://ntgcentral-dev.nt.gov.au/…/git_bridge/…/eoi-form.css">` (Matrix bridge)       | `<link rel="stylesheet" href="/css/eoi-form.css">` (Vite serves it)       |
+| `eoi-form.js` loading          | `<script type="text/javascript" src="https://ntgcentral-dev.nt.gov.au/…/git_bridge/…/eoi-form.js">` | `<script type="module" src="/js/eoi-form.js">` (Vite processes it)        |
+| `JSON.parse` in status toolbar | `JSON.parse('')` (Matrix renders an empty string — valid in its server context)                     | `JSON.parse('{}')` (prevents `SyntaxError: Unexpected end of JSON input`) |
 
 ### FontAwesome dev kit
 
@@ -80,12 +81,10 @@ These are **expected and harmless** in the local dev environment. The remote ser
 
 ## Editing the source files
 
-| File               | Purpose                                                                                                            |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `js/eoi-form.js`   | JavaScript for the EOI form. Import additional modules here as needed.                                             |
-| `css/eoi-form.css` | Styles for the EOI form. The file is imported from within `eoi-form.js` so Vite can process it during development. |
-
-The CSS import at the top of `eoi-form.js` (`import "../css/eoi-form.css"`) is only consumed by the local Vite dev server. In production, Matrix references `css/eoi-form.css` directly — the import line has no effect in that context.
+| File               | Purpose                                                                                                                     |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `js/eoi-form.js`   | JavaScript for the EOI form.                                                                                                |
+| `css/eoi-form.css` | Styles for the EOI form. Loaded via `<link>` in the local dev reference HTML; loaded via the Git File Bridge in production. |
 
 ---
 
@@ -179,24 +178,24 @@ When `#metadata_field_select_445640` (Agency) changes:
 
 ## CSS summary (`css/eoi-form.css`)
 
-| Rule / selector                                                           | Purpose                                                                                |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `.sq-limbo-section-heading`                                               | Hides the Matrix asset builder section heading                                         |
-| `tr[data-attribute-filter*="file-name/title/allowunrestrictedaccess"]`    | Hides irrelevant file upload table rows injected by Matrix's asset builder UI          |
-| `tr[data-attribute-filter*="file"] > td:nth-of-type(1)`                   | Hides the label cell in the file upload row                                            |
-| `.sq-form-upload`                                                         | Adds bottom margin to the file upload input                                            |
-| `div[data-ref="designation"] select`                                      | Sets minimum height on the multi-select and removes the default dropdown arrow         |
-| `.ntgc-table__cell`                                                       | Removes padding and bottom border from table cells                                     |
-| `div[data-ref="location/homepage/platforms"] .ntgc-table__wrapper`        | Adds top margin to table wrappers in those sections                                    |
-| `.sq-metadata-date-wrapper select.ntgc-select--block`                     | Makes date part selects `inline-block` and fixed-width (`6rem`)                        |
-| `.sq-metadata-date-wrapper .sq-inline-fields-wrapper:nth-of-type(2/3)`    | Hides the "OR IN duration" and "OR keyword" date rows injected by Matrix               |
-| `div[data-ref="file-upload"] .sq-backend-smallprint`                      | Hides the file type/size hint text below the upload field                              |
-| `#metadata_field_date_445509_datetimevalue_h/i`                           | Hides hour and minute selects (time is set programmatically to 23:45)                  |
-| `div.sq-metadata-date-wrapper`                                            | Sets text colour to white to hide the colon separator between the hidden time selects  |
-| `#declaration tr` / `#declaration tr:first-child`                         | Collapses the approvals table but keeps the first row (declaration text) visible       |
-| `.ntgc-tip`                                                               | Small helper text style (0.75 rem, 10 px bottom margin)                                |
-| `#date-close-warning`                                                     | Danger-coloured warning below the close date field                                     |
-| `#metadata_field_date_445509_datetimevalue_[d/m/y].ntgc-date--error`      | Red border on date selects when the close-date warning is active                       |
+| Rule / selector                                                        | Purpose                                                                               |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `.sq-limbo-section-heading`                                            | Hides the Matrix asset builder section heading                                        |
+| `tr[data-attribute-filter*="file-name/title/allowunrestrictedaccess"]` | Hides irrelevant file upload table rows injected by Matrix's asset builder UI         |
+| `tr[data-attribute-filter*="file"] > td:nth-of-type(1)`                | Hides the label cell in the file upload row                                           |
+| `.sq-form-upload`                                                      | Adds bottom margin to the file upload input                                           |
+| `div[data-ref="designation"] select`                                   | Sets minimum height on the multi-select and removes the default dropdown arrow        |
+| `.ntgc-table__cell`                                                    | Removes padding and bottom border from table cells                                    |
+| `div[data-ref="location/homepage/platforms"] .ntgc-table__wrapper`     | Adds top margin to table wrappers in those sections                                   |
+| `.sq-metadata-date-wrapper select.ntgc-select--block`                  | Makes date part selects `inline-block` and fixed-width (`6rem`)                       |
+| `.sq-metadata-date-wrapper .sq-inline-fields-wrapper:nth-of-type(2/3)` | Hides the "OR IN duration" and "OR keyword" date rows injected by Matrix              |
+| `div[data-ref="file-upload"] .sq-backend-smallprint`                   | Hides the file type/size hint text below the upload field                             |
+| `#metadata_field_date_445509_datetimevalue_h/i`                        | Hides hour and minute selects (time is set programmatically to 23:45)                 |
+| `div.sq-metadata-date-wrapper`                                         | Sets text colour to white to hide the colon separator between the hidden time selects; nested `& select { margin-bottom: 0 }` removes gap below selects. Uses CSS nesting — requires a browser that supports it (all modern browsers). |
+| `#declaration tr` / `#declaration tr:first-child`                      | Collapses the approvals table but keeps the first row (declaration text) visible      |
+| `.ntgc-tip`                                                            | Small helper text style (0.75 rem, 10 px bottom margin)                               |
+| `#date-close-warning`                                                  | Danger-coloured warning below the close date field                                    |
+| `#metadata_field_date_445509_datetimevalue_[d/m/y].ntgc-date--error`   | Red border on date selects when the close-date warning is active                      |
 
 ---
 
@@ -215,7 +214,7 @@ The Git File Bridge in Matrix is pointed at this repository. Matrix serves the f
 2. Commit and push to the branch the Git File Bridge is tracking.
 3. Matrix will serve the updated files on the next bridge sync (or immediately if configured to pull on demand).
 
-The production Matrix page loads `eoi-form.js` as a plain `text/javascript` script (not a module), so the `import "../css/eoi-form.css"` line at the top is silently ignored. Matrix loads the CSS separately through the bridge.
+The production Matrix page loads `eoi-form.js` as a plain `text/javascript` script (not a module). Do not use ES module syntax (`import`/`export`) at the top level of `eoi-form.js`.
 
 ---
 
@@ -223,9 +222,9 @@ The production Matrix page loads `eoi-form.js` as a plain `text/javascript` scri
 
 - **Do not add a build step.** Matrix reads `js/eoi-form.js` and `css/eoi-form.css` directly from the repo. There is no `dist/` folder and no bundler output.
 - **Do not import or bundle jQuery.** It is a runtime global provided by Matrix. All `$()` calls rely on this global.
-- **`eoi-form.js` runs as a plain script in production** (not a module). Avoid top-level `await` or other module-only features. The `import` at the top of the file is only processed by Vite in dev.
+- **`eoi-form.js` runs as a plain script in production** (not a module). Do not use ES module syntax (`import`/`export`) — there is no bundler to process it, and it will throw a `SyntaxError` at runtime.
 - **The reference HTML is the source of truth for DOM structure.** Before adding or changing a selector in `js/eoi-form.js` or `css/eoi-form.css`, verify the ID, class, or `data-attribute-filter` value against the reference HTML file.
-- **The reference HTML has been modified for local dev** (see the [Local dev modifications](#reference-html--local-dev-modifications) table above). When refreshing the reference HTML from the live site, re-apply those four changes before running `npm run dev`.
+- **The reference HTML has been modified for local dev** (see the [Local dev modifications](#reference-html--local-dev-modifications) table above). When refreshing the reference HTML from the live site, re-apply those five changes before running `npm run dev`.
 - **Do not edit the reference HTML to implement features.** It is a local dev aid only. All logic belongs in `js/eoi-form.js` and `css/eoi-form.css`.
 - **CORS font errors in dev are expected** and do not indicate a problem with the code.
 - **Matrix injects many irrelevant UI rows and labels into the form DOM.** The CSS deliberately hides these with `[data-attribute-filter]` selectors. If a DOM element appears to be missing, check whether it is being hidden by one of these rules before concluding it doesn't exist.
