@@ -1,3 +1,40 @@
+/**
+ * eoi-form.css
+ * ------------
+ * Custom styles for the "Directly publish an expression of interest" form
+ * on NTG Central (Squiz Matrix CMS).
+ *
+ * ## Structure
+ * Styles are grouped in the order they appear in the form:
+ *   1. CMS layout overrides  — hides Squiz Matrix boilerplate elements
+ *   2. Designation           — multi-select sizing
+ *   3. Close date            — hides time fields, warning + error state
+ *   4. Agency / advertise    — no layout overrides needed
+ *   5. Inline field warnings — shared danger-colour text style
+ *   6. Error state borders   — red borders/outlines on invalid inputs
+ *
+ * ## Error CSS classes (toggled by js/eoi-form.js → updateSubmitButton)
+ * | Class                | Applied to                              |
+ * |----------------------|-----------------------------------------|
+ * | .ntgc-date--error    | Close-date day/month/year <select>s     |
+ * | .ntgc-select--error  | Designation, Location, Agency <select>s |
+ * | .ntgc-file--error    | Documentation file <input>              |
+ *
+ * ## Warning element IDs (hidden by default; shown by JS)
+ * | ID                        | Field              |
+ * |---------------------------|--------------------|
+ * | #date-close-warning       | Close date         |
+ * | #designation-warning      | Designation        |
+ * | #location-warning         | Location           |
+ * | #agency-advertise-warning | Agency / advertise |
+ * | #documentation-warning    | Documentation      |
+ *
+ * ## Dependencies
+ * - NTG Central design system (main.css) — provides CSS custom properties:
+ *     --clr-status-danger  (#a60f37 fallback)
+ * - Roboto font (loaded separately by the CMS page template)
+ */
+
 /* EOI Direct Form styles */
 
 .sq-limbo-section-heading {
@@ -104,4 +141,31 @@ div.sq-metadata-date-wrapper {
 #metadata_field_date_445509_datetimevalue_m.ntgc-date--error,
 #metadata_field_date_445509_datetimevalue_y.ntgc-date--error {
   border-color: var(--clr-status-danger, #a60f37) !important;
+}
+
+#designation-warning,
+#location-warning,
+#agency-advertise-warning,
+#documentation-warning {
+  width: 100%;
+  color: var(--clr-status-danger, #a60f37);
+  font-size: 14px;
+  font-family: Roboto, sans-serif;
+  font-weight: 400;
+  line-height: 20px;
+  word-wrap: break-word;
+  margin-top: 4px;
+}
+
+#metadata_field_select_445634.ntgc-select--error,
+#metadata_field_select_445518.ntgc-select--error {
+  border-color: var(--clr-status-danger, #a60f37) !important;
+}
+
+#metadata_field_select_445640.ntgc-select--error {
+  border-color: var(--clr-status-danger, #a60f37) !important;
+}
+
+input[name="word_doc_0"].ntgc-file--error {
+  outline: 2px solid var(--clr-status-danger, #a60f37);
 }
