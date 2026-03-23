@@ -1,1 +1,107 @@
 /* EOI Direct Form styles */
+
+.sq-limbo-section-heading {
+  display: none;
+}
+
+tr[data-attribute-filter*="file-name"],
+tr[data-attribute-filter*="title"],
+tr[data-attribute-filter*="allowunrestrictedaccess"] {
+  display: none !important;
+}
+
+tr[data-attribute-filter*="file"] > td:nth-of-type(1) {
+  display: none;
+}
+
+.sq-form-upload {
+  margin-bottom: 1rem;
+}
+
+div[data-ref="designation"] select {
+  min-height: 180px;
+  background-image: none;
+}
+
+.ntgc-table__cell {
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
+
+div[data-ref="location"] .ntgc-table__wrapper,
+div[data-ref="homepage"] .ntgc-table__wrapper,
+div[data-ref="platforms"] .ntgc-table__wrapper {
+  margin-top: 0.5rem !important;
+}
+
+.sq-metadata-date-wrapper select.ntgc-select--block {
+  display: inline-block;
+  width: 6rem;
+}
+
+.sq-metadata-date-wrapper .sq-inline-fields-wrapper:nth-of-type(2),
+.sq-metadata-date-wrapper .sq-inline-fields-wrapper:nth-of-type(3) {
+  display: none;
+}
+
+div[data-ref="file-upload"] .sq-backend-smallprint {
+  display: none;
+}
+
+/*Hide time*/
+#metadata_field_date_445509_datetimevalue_h,
+#metadata_field_date_445509_datetimevalue_i {
+  visibility: hidden;
+}
+
+/*Hide the colon between hour and minutes*/
+div.sq-metadata-date-wrapper {
+  color: white;
+
+  & select {
+    margin-bottom: 0;
+  }
+}
+
+/*Approvals Hide Yes/No*/
+#declaration tr {
+  display: none;
+}
+
+#declaration tr:first-child {
+  display: block;
+}
+
+/*Arrange Agency names in 2 columns
+@media (min-width: 1280px) {
+    #advertise-selection{
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        column-count: 2;
+        -webkit-column-gap: 1em;
+        -moz-column-gap: 1em;
+        column-gap: 1em;
+    }
+}*/
+
+.ntgc-tip {
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+}
+
+#date-close-warning {
+  width: 100%;
+  color: var(--clr-status-danger, #a60f37);
+  font-size: 14px;
+  font-family: Roboto, sans-serif;
+  font-weight: 400;
+  line-height: 20px;
+  word-wrap: break-word;
+  margin-top: -16px;
+}
+
+#metadata_field_date_445509_datetimevalue_d.ntgc-date--error,
+#metadata_field_date_445509_datetimevalue_m.ntgc-date--error,
+#metadata_field_date_445509_datetimevalue_y.ntgc-date--error {
+  border-color: var(--clr-status-danger, #a60f37) !important;
+}
