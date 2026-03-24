@@ -1,74 +1,138 @@
 /**
  * eoi-form.js
  * -----------
- * Client-side behaviour for the "Directly publish an expression of interest" form
- * on NTG Central (Squiz Matrix CMS).
+ * Client-side behaviour for the "Directly publish an expression of interest"
+ * form on NTG Central (Squiz Matrix CMS).
  *
  * ## Overview
- * The form is a Squiz Matrix asset-builder page. Its native submit button
- * (#sq_commit_button) carries an inline onclick that calls the CMS function
- * `submit_form()`. This script:
- *   1. Replaces the button label ("Save" → "Submit") and disables it on load.
- *   2. Intercepts the click to run client-side validation before allowing
- *      the CMS submission to proceed.
- *   3. Pre-populates the close date to the next valid business day (≥ 3 working
- *      days from today).
- *   4. Filters the "Where do you want to advertise?" checkbox table so only the
- *      row matching the selected agency is shown.
- *   5. Re-evaluates the submit button's enabled state and inline warning
- *      messages whenever watched fields change.
+ * The form is a Squiz Matrix asset-builder page. On DOMContentLoaded this
+ * script runs the following setup steps, then jQuery ready handles ongoing
+ * event-driven behaviour:
+ *
+ *   1. Declaration section — auto-checks the hidden declaration checkbox
+ *      (#metadata_field_select_691088_declare) and hides both the #declaration
+ *      div and its preceding <label>. This bypasses the approval step that is
+ *      not required for the direct-publish workflow.
+ *
+ *   2. Submit button — the CMS renders an <input type="submit"> which cannot
+ *      contain child elements. The script replaces it at runtime with a
+ *      <button type="submit"> (same id and classes, minus ntgc-file-upload)
+ *      labelled "Submit", starts disabled, and has its CMS inline onclick
+ *      removed so all submission logic is fully controlled here.
+ *
+ *   3. Click-time validation — when the button is clicked a secondary
+ *      validation pass runs (backup to updateSubmitButton). If any field fails,
+ *      the CMS error banner is shown and the page scrolls to it. On success:
+ *        - The button is immediately disabled (prevents double-submit).
+ *        - Its label changes to "Submitting...please wait" with a
+ *          FontAwesome Pro fa-spinner-third fa-spin icon appended inside.
+ *        - Submission is handed to the CMS via submit_form(form, true), with a
+ *          plain form.submit() fallback if the CMS function is unavailable.
+ *
+ *   4. Close date pre-population — defaults to today + 3 calendar days (Mon/
+ *      Tue) or today + 5 calendar days (Wed–Sun) to guarantee a minimum of
+ *      3 business days. Time is set to 23:45 (hidden in the UI via CSS).
+ *
+ *   5. Advertise filter — hides all rows in the "Where do you want to
+ *      advertise?" table on load except NTG Central. When an agency is
+ *      selected, shows the matching row and auto-checks its checkbox.
+ *      If no matching row exists the NTG Central checkbox is checked instead
+ *      and #agency-advertise-warning is shown.
+ *
+ *   6. Real-time gate (updateSubmitButton) — re-evaluates all five required-
+ *      field conditions on every watched change event and enables/disables
+ *      the submit button accordingly.
  *
  * ## Dependencies
- * - jQuery 3.4.1 (loaded before this script by the CMS page template)
- * - Squiz Matrix global `submit_form(form, bool)` function (injected by CMS)
+ * - jQuery 3.4.1 (loaded by the CMS page template before this script)
+ * - Squiz Matrix global `submit_form(form, bool)` (injected by CMS at runtime)
+ * - FontAwesome Pro (loaded by the CMS asset pipeline; dev kit in reference HTML)
+ *   Icon used: fas fa-spinner-third fa-spin (inside the submit button on submit)
  *
  * ## Field ID reference
- * | Field                    | Element ID / selector                          |
- * |--------------------------|------------------------------------------------|
- * | Designation (multi-sel.) | #metadata_field_select_445634                  |
- * | Close date – day         | #metadata_field_date_445509_datetimevalue_d    |
- * | Close date – month       | #metadata_field_date_445509_datetimevalue_m    |
- * | Close date – year        | #metadata_field_date_445509_datetimevalue_y    |
- * | Close date – hour        | #metadata_field_date_445509_datetimevalue_h    |
- * | Close date – minute      | #metadata_field_date_445509_datetimevalue_i    |
- * | Vacancy duration         | #metadata_field_text_445506_value              |
- * | Agency (single-sel.)     | #metadata_field_select_445640                  |
- * | Location (multi-sel.)    | #metadata_field_select_445518                  |
- * | Advertise checkboxes     | input[name^="metadata_field_select_446182"]    |
- * | NTG Central checkbox     | #metadata_field_select_446182_WoG              |
- * | Agency checkbox (dyn.)   | #metadata_field_select_446182_{AGENCY_CODE}    |
- * | Documentation (file)     | input[name="word_doc_0"]                       |
- * | Submit button            | #sq_commit_button                              |
+ * | Field                    | Element ID / selector                            |
+ * |--------------------------|--------------------------------------------------|
+ * | Designation (multi-sel.) | #metadata_field_select_445634                    |
+ * | Close date – day         | #metadata_field_date_445509_datetimevalue_d      |
+ * | Close date – month       | #metadata_field_date_445509_datetimevalue_m      |
+ * | Close date – year        | #metadata_field_date_445509_datetimevalue_y      |
+ * | Close date – hour        | #metadata_field_date_445509_datetimevalue_h      |
+ * | Close date – minute      | #metadata_field_date_445509_datetimevalue_i      |
+ * | Vacancy duration         | #metadata_field_text_445506_value                |
+ * | Agency (single-sel.)     | #metadata_field_select_445640                    |
+ * | Location (multi-sel.)    | #metadata_field_select_445518                    |
+ * | Advertise checkboxes     | input[name^="metadata_field_select_446182"]      |
+ * | NTG Central checkbox     | #metadata_field_select_446182_WoG                |
+ * | Agency checkbox (dyn.)   | #metadata_field_select_446182_{AGENCY_CODE}      |
+ * | Documentation (file)     | input[name="word_doc_0"]                         |
+ * | Declaration checkbox     | #metadata_field_select_691088_declare            |
+ * | Declaration section      | #declaration                                     |
+ * | Submit button            | #sq_commit_button  (a <button>, not <input>)     |
  *
- * ## Warning / error element IDs (HTML, hidden by default)
+ * ## Warning / error element IDs (in html/eoi-form.html, hidden by default)
  * | Element ID                | Shown when…                                          |
  * |---------------------------|------------------------------------------------------|
- * | #designation-warning      | No designation is selected                           |
- * | #date-close-warning       | Close date is < 3 business days from today           |
- * | #location-warning         | No location is selected                              |
- * | #agency-advertise-warning | Agency is selected but has no matching checkbox row  |
- * | #documentation-warning    | No file has been attached                            |
+ * | #designation-warning      | No designation selected                              |
+ * | #date-close-warning        | Close date is < 3 business days from today           |
+ * | #location-warning         | No location selected                                 |
+ * | #agency-advertise-warning | Agency chosen but has no matching advertise checkbox |
+ * | #documentation-warning    | No Word document attached                            |
  *
  * ## CSS error classes (defined in css/eoi-form.css)
- * - .ntgc-date--error   — red border on close-date <select> elements
- * - .ntgc-select--error — red border on designation / location / agency selects
- * - .ntgc-file--error   — red outline on the file input
+ * | Class                | Applied to                                    |
+ * |----------------------|-----------------------------------------------|
+ * | .ntgc-date--error    | Close-date day / month / year <select>s       |
+ * | .ntgc-select--error  | Designation, Location, Agency <select>s       |
+ * | .ntgc-file--error    | Documentation file <input>                    |
+ *
+ * ## Agencies without an intranet advertise row (NTG Central fallback only)
+ * AAPA, AGO, DPC, DWC, ICAC, InfoComm, JE, LDC, NTEC, NTJC, NTLAC,
+ * OCC, OCPE, OMB, PWC
+ * These agencies appear in the Agency dropdown (#metadata_field_select_445640)
+ * but have no corresponding checkbox in the advertise table. When selected,
+ * #agency-advertise-warning is shown and the form cannot be submitted.
  */
 
 // ---------------------------------------------------------------------------
-// 1. Submit button — disable on load and wire click-time validation
+// 1. DOMContentLoaded — declaration hide, button replacement, click validation
 // ---------------------------------------------------------------------------
 /**
- * Runs before jQuery's ready event so the button is never temporarily enabled.
- * The inline onclick attribute from Squiz Matrix is removed; submission is
- * handled manually inside the click listener once all validations pass.
+ * Runs synchronously on DOMContentLoaded (before jQuery ready) to ensure:
+ *   a) The declaration section is hidden before the user sees the page.
+ *   b) The CMS <input type="submit"> is replaced with a <button type="submit">
+ *      before any other code references #sq_commit_button, so the button can
+ *      hold child elements (e.g. the spinner icon injected on submit).
+ *   c) The button starts disabled — updateSubmitButton() enables it once all
+ *      required fields are filled.
+ *   d) The CMS inline onclick is stripped; submission is fully controlled by
+ *      the click listener attached here.
  */
 document.addEventListener("DOMContentLoaded", function () {
-  const commitButton = document.getElementById("sq_commit_button");
+  // Auto-check the declaration checkbox and hide the entire section
+  const declaration = document.getElementById("declaration");
+  if (declaration) {
+    const declarationCheckbox = document.getElementById(
+      "metadata_field_select_691088_declare",
+    );
+    if (declarationCheckbox) declarationCheckbox.checked = true;
+    const declarationLabel = declaration.previousElementSibling;
+    if (declarationLabel) declarationLabel.style.display = "none";
+    declaration.style.display = "none";
+  }
 
-  $(commitButton).prop("value", "Submit");
+  const inputBtn = document.getElementById("sq_commit_button");
+
+  // Replace <input type="submit"> with <button type="submit"> so child
+  // elements (e.g. spinner icon) can be rendered inside the button.
+  const commitButton = document.createElement("button");
+  commitButton.type = "submit";
+  commitButton.id = inputBtn.id;
+  commitButton.className = inputBtn.className;
+  commitButton.classList.remove("ntgc-file-upload");
+  commitButton.textContent = "Submit";
   // Disable immediately — updateSubmitButton() will re-enable when valid
   commitButton.disabled = true;
+  inputBtn.parentNode.replaceChild(commitButton, inputBtn);
 
   if (commitButton) {
     // Remove the CMS-injected inline onclick so we fully control submission
@@ -145,8 +209,13 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // All validations passed — hand off to the CMS submission handler
-      $("#sq_commit_button").attr("value", "Saving...");
+      // All validations passed — disable button, show spinner, then submit
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML =
+        "Submitting...please wait" +
+        '<i class="fas fa-spinner-third fa-spin" style="margin-left: 8px"></i>';
+
       if (typeof submit_form === "function") {
         this.form.sq_committing.value = 1;
         submit_form(this.form, true);
@@ -160,7 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // ---------------------------------------------------------------------------
-// 2. Utility — add N working days to a date (Mon–Fri, no public holiday check)
+// 2. Utility — addWorkingDays (Mon–Fri only, no public holiday awareness)
 // ---------------------------------------------------------------------------
 /**
  * @param {Date} date  - The start date.
@@ -180,7 +249,7 @@ function addWorkingDays(date, days) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. jQuery ready — date pre-population, agency filter, validation hooks
+// 3. jQuery ready — date pre-population, advertise filter, change listeners
 // ---------------------------------------------------------------------------
 $(document).ready(function () {
   // -- Element references --------------------------------------------------
