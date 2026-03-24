@@ -8,6 +8,8 @@ Front-end assets (JS and CSS) for the **Expression of Interest Direct Publish** 
 
 ```
 eoi-direct-form/
+├── html/
+│   └── eoi-form.html        # Squiz Matrix content template – the form body (deployed to Matrix)
 ├── js/
 │   └── eoi-form.js          # Main JavaScript entry point – all form logic goes here
 ├── css/
@@ -81,10 +83,41 @@ These are **expected and harmless** in the local dev environment. The remote ser
 
 ## Editing the source files
 
-| File               | Purpose                                                                                                                     |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `js/eoi-form.js`   | JavaScript for the EOI form.                                                                                                |
-| `css/eoi-form.css` | Styles for the EOI form. Loaded via `<link>` in the local dev reference HTML; loaded via the Git File Bridge in production. |
+| File                 | Purpose                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `html/eoi-form.html` | Matrix content template for the asset builder page. Contains the form body layout using Matrix template variables. Deployed as the "Content" of the Matrix asset builder page. |
+| `js/eoi-form.js`     | JavaScript for the EOI form.                                                                                                |
+| `css/eoi-form.css`   | Styles for the EOI form. Loaded via `<link>` in the local dev reference HTML; loaded via the Git File Bridge in production. |
+
+---
+
+## Matrix page template (`html/eoi-form.html`)
+
+This file is the **Content** of the Squiz Matrix asset builder page. It defines the form body layout and is pasted into (or bridged into) the Matrix CMS content editor.
+
+### Matrix template syntax
+
+| Syntax | Expands to |
+|--------|------------|
+| `%metadata-F_{ASSET_ID}%` | The rendered form field HTML for that metadata field |
+| `%metadata-id_F_{ASSET_ID}%` | The field's HTML `id` attribute value (used in `<label for="">`) |
+| `%globals_date_Y%` | Current four-digit year (server-side variable) |
+| `%globals_date_y%` | Current two-digit year |
+| `%details-S_{SCHEMA_ID}%` | Renders a details schema section (used for the file upload area) |
+| `%commit_button^replace:{OLD_CLASS}:{NEW_CLASS}%` | Renders the Matrix submit button, replacing `{OLD_CLASS}` with `{NEW_CLASS}` on the element |
+
+### Warning elements required in this file
+
+`js/eoi-form.js` shows and hides inline warning `<div>`s by ID. Four of these elements are styled in `css/eoi-form.css` but must also be **physically present** in the Matrix page HTML (with `style="display: none;"`) for them to work. They are not currently in this file — add them adjacent to their corresponding fields:
+
+| ID | Place after | Trigger condition |
+|----|-------------|-------------------|
+| `#designation-warning` | `%metadata-F_445634%` | No designation selected |
+| `#location-warning` | `%metadata-F_445518%` | No location selected |
+| `#agency-advertise-warning` | `#advertise-selection` | Selected agency has no matching advertise checkbox row |
+| `#documentation-warning` | `%details-S_details%` | No file attached |
+
+> `#date-close-warning` is already present in `html/eoi-form.html` and does not need to be added.
 
 ---
 
@@ -147,9 +180,10 @@ Agency checkbox IDs follow the pattern `metadata_field_select_446182_{CODE}` whe
 
 Calculates a default close date and pre-selects the five date/time `<select>` dropdowns (`_d`, `_m`, `_y`, `_h`, `_i`):
 
-- **Default offset**: 3 working days from today.
-- **Thursday/Friday adjustment**: if today is Thu (day 4) or Fri (day 5), adds 5 calendar days instead of 3, ensuring the result clears the coming weekend.
-- **Time**: always pre-set to 23:45 (`_h` index 23, `_i` index 45).
+- **Offset logic**: uses `today.getDay() < 3 ? 3 : 5` (calendar days, **not** working days):
+  - Sunday (0), Monday (1), Tuesday (2) → add **3** calendar days — result lands Thu/Fri, already 3+ business days ahead.
+  - Wednesday (3), Thursday (4), Friday (5), Saturday (6) → add **5** calendar days — skips the coming weekend to ensure the result is still 3+ business days ahead.
+- **Time**: always pre-set to 23:45 (`_h` option index 23, `_i` option index 45).
 
 #### Agency → advertise-site sync
 
@@ -171,6 +205,7 @@ When `#metadata_field_select_445640` (Agency) changes:
 | `addWorkingDays(date, days)`   | Global   | Returns a new `Date` incremented by `days` working days (Mon–Fri).              |
 | `countWorkingDays(start, end)` | Closured | Returns the integer count of working days between two `Date` objects.           |
 | `checkCloseDateWarning()`      | Closured | Reads the three close date `<select>` elements and updates the warning display. |
+| `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. Call this after any programmatic field change. |
 
 > `addWorkingDays` is declared at module scope (not inside `$(document).ready`) because it may be called by other scripts on the Matrix page.
 
@@ -228,5 +263,7 @@ The production Matrix page loads `eoi-form.js` as a plain `text/javascript` scri
 - **Do not edit the reference HTML to implement features.** It is a local dev aid only. All logic belongs in `js/eoi-form.js` and `css/eoi-form.css`.
 - **CORS font errors in dev are expected** and do not indicate a problem with the code.
 - **Matrix injects many irrelevant UI rows and labels into the form DOM.** The CSS deliberately hides these with `[data-attribute-filter]` selectors. If a DOM element appears to be missing, check whether it is being hidden by one of these rules before concluding it doesn't exist.
+- **`html/eoi-form.html` is the Matrix page content template.** Changes to form layout, labels, tips, or the placement of warning `<div>`s must be made here and then applied in Matrix. Do not confuse it with the reference HTML snapshot — they serve different purposes.
+- **Warning `<div>` elements must exist in the Matrix page HTML.** `updateSubmitButton()` calls `.toggle()` on `#designation-warning`, `#location-warning`, `#agency-advertise-warning`, and `#documentation-warning`. If these elements are absent from the DOM, warnings silently fail to appear. They must be added to `html/eoi-form.html` as `<div id="…" style="display: none;">…warning text…</div>` adjacent to their fields. See the [Warning elements](#warning-elements-required-in-this-file) table.
 - `vite.config.js` is intentionally minimal (`root: "."`, `server.open`). Do not add a `build` block unless compiled output is explicitly required by a new deployment target.
 - Keep all JS in `js/eoi-form.js` and all CSS in `css/eoi-form.css` unless scope grows significantly and splitting is discussed with the team.

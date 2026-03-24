@@ -1,0 +1,98 @@
+<div class="container">
+
+    <div class="my-5">
+        <p>Use this form to publish an expression of interest for an internal vacancy 6 months or less. Workforce
+            Services only. This form publishes directly and bypasses workflow.</p>
+        <p>An EOI can be published on an:</p>
+        <ul>
+            <li>agency intranet or</li>
+            <li>agency intranet and NTG Central.</li>
+        </ul>
+        <p>Before you submit the form below, you must include an electronic copy of the job description.</p>
+    </div>
+
+    <div class="mb-4">
+        <label for="%metadata-id_F_445504%">Position title*</label>
+        %metadata-F_445504%
+    </div>
+
+    <div class="mb-4">
+        <!--<h3 class="mt-0">Display options</h3>-->
+        <label for="%metadata-id_F_445634%" class="d-block mb-1">Designation(s)*</label>
+        <div class="ntgc-tip">Hold the 'CTRL' key and click to select multiple designations.</div>
+        %metadata-F_445634%
+        <div id="designation-warning" style="display: none;">Please select at least one designation.</div>
+
+    </div>
+
+    <div class="news--type mb-1">
+        <label for="%metadata-id_F_445509%" class="d-block mb-1">Preferred advertising close date*</label>
+        <div class="ntgc-tip">An EOI must be advertised for at least 3 business days. The closing date may change
+            depending on when it’s published.</div>
+        %metadata-F_445509%
+
+        <div id="date-close-warning" style="display: none;">
+            The selected close date is less than 3 business days from today. An EOI must be advertised for at least 3
+            business days.
+        </div>
+    </div>
+
+    <div class="mb-4 news--type">
+        <label for="%metadata-id_F_445506%" class="d-block mb-1">Vacancy duration*</label>
+        <div class="ntgc-tip">Use 1 January %globals_date_Y% to 1 May %globals_date_Y% or you can use ASAP to 1 May
+            %globals_date_Y%.</br>
+            Do not use abbreviated dates (01/01/%globals_date_y%) or “Fixed for”.</div>
+
+        %metadata-F_445506%
+    </div>
+
+    <div class="mb-4 news--type">
+        <label for="%metadata-id_F_445640%" class="d-block mb-1">Agency*</label>
+        %metadata-F_445640%
+    </div>
+
+
+    <div class="mb-4 news--type">
+        <label for="%metadata-id_F_445518%" class="d-block mb-1">Location*</label>
+        %metadata-F_445518%
+        <div id="location-warning" style="display: none;">Please select at least one location.</div>
+
+    </div>
+
+    <div id="news--advertise" class="mb-2 news--type">
+        <label for="%metadata-id_F_446182%" class="d-block mb-1">Where do you want to advertise this job?*</label>
+        <div class="ntgc-tip">The EOI will be advertised on the agency intranet and NTG Central.</br>
+            Untick NTG Central to advertise only on the agency intranet.</div>
+        <div id="advertise-selection">
+            %metadata-F_446182%
+        </div>
+        <div id="agency-advertise-warning" style="display: none;">The selected agency does not have a dedicated intranet listing. This EOI will be published on NTG Central only.</div>
+    </div>
+
+    <div class="mb-2 adapt-squiz-screen" data-ref="file-upload">
+        <label class="d-block mb-1">Documentation*</label>
+        <div class="ntgc-tip">The job description must be uploaded in MS-Word using the approved <a href="./?a=430175"
+                target="_blank">job description template</a>.</div>
+        <!--Attach the image you would like to use as the news thumbnail-->
+        %details-S_details%
+        <div id="documentation-warning" style="display: none;">A Word document job description must be attached.</div>
+    </div>
+
+    <!--div class="mb-4 adapt-squiz-screen" data-ref="file-upload">
+	    <label for="%metadata-id_F_691088%" class="d-block mb-1">Approval*</label>
+        <div class="mt-2" id="declaration">
+         %metadata-F_691088%
+         </div>
+    </div-->
+    <div class="d-none">
+        %metadata-F_691085% %metadata-F_691086%
+    </div>
+
+    <div class="mb-4">
+        <div class="mt-2">
+            %commit_button^replace:sq-commit-button:ntgc-btn ntgc-btn--primary%
+        </div>
+    </div>
+
+
+</div>
