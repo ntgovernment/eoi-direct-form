@@ -1,0 +1,10 @@
+{
+  "name": "eoi-direct-form",
+  "private": true,
+  "scripts": {
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}
