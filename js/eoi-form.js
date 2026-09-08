@@ -41,7 +41,10 @@
  *
  *   6. Real-time gate (updateSubmitButton) — re-evaluates all five required-
  *      field conditions on every watched change event and enables/disables
- *      the submit button accordingly.
+ *      the submit button accordingly. An agency without a dedicated
+ *      advertise row only blocks submission if no checkbox ends up checked
+ *      (i.e. the NTG Central fallback also failed) — the warning shown for
+ *      that case is informational, not a hard error.
  *
  * ## Dependencies
  * - jQuery 3.4.1 (loaded by the CMS page template before this script)
@@ -75,7 +78,7 @@
  * | #designation-warning      | No designation selected                              |
  * | #date-close-warning        | Close date is < 3 business days from today           |
  * | #location-warning         | No location selected                                 |
- * | #agency-advertise-warning | Agency chosen but has no matching advertise checkbox |
+ * | #agency-advertise-warning | Agency chosen has no matching advertise checkbox (informational — NTG Central fallback still allows submission) |
  * | #documentation-warning    | No Word document attached                            |
  *
  * ## CSS error classes (defined in css/eoi-form.css)
@@ -90,7 +93,8 @@
  * OCC, OCPE, OMB, PWC
  * These agencies appear in the Agency dropdown (#metadata_field_select_445640)
  * but have no corresponding checkbox in the advertise table. When selected,
- * #agency-advertise-warning is shown and the form cannot be submitted.
+ * #agency-advertise-warning is shown and the NTG Central checkbox is
+ * auto-checked in its place, so the form can still be submitted.
  */
 
 // ---------------------------------------------------------------------------
@@ -467,24 +471,32 @@ $(document).ready(function () {
     var dateOk = d && d !== "--" && m && m !== "--" && y && y !== "--";
 
     // 4. Agency + advertise checkbox
-    // agencyOk is true only when the selected agency value has a corresponding
-    // checkbox element in the advertise table (id pattern: metadata_field_select_446182_{VALUE}).
-    // Agencies that exist in the Agency dropdown but not in the advertise table
+    // agencyHasDedicatedRow is purely informational (drives the warning below);
+    // agencies without a dedicated row still publish via the NTG Central fallback,
+    // so it must not block submission on its own.
     // (e.g. AAPA, AGO, DPC, DWC, ICAC, InfoComm, JE, LDC, NTEC, NTJC, NTLAC,
     //  OCC, OCPE, OMB, PWC) will show #agency-advertise-warning.
     var agencyValue = $("#metadata_field_select_445640").val();
-    var agencyOk = false;
+    var agencyHasDedicatedRow = false;
     if (agencyValue) {
       var agencyCheckboxId =
         "#metadata_field_select_446182_" + agencyValue.replaceAll(" ", "");
-      agencyOk = $(agencyCheckboxId).length > 0;
+      agencyHasDedicatedRow = $(agencyCheckboxId).length > 0;
     }
     var agencySelected = !!agencyValue;
-    $("#agency-advertise-warning").toggle(agencySelected && !agencyOk);
+    $("#agency-advertise-warning").toggle(
+      agencySelected && !agencyHasDedicatedRow,
+    );
     $("#metadata_field_select_445640").toggleClass(
       "ntgc-select--error",
-      agencySelected && !agencyOk,
+      agencySelected && !agencyHasDedicatedRow,
     );
+
+    // The real gate is whether an advertise destination is actually checked
+    // (covers both the dedicated-row case and the NTG Central fallback).
+    var advertiseOk = $(
+      'input[name^="metadata_field_select_446182"]:checked',
+    ).length > 0;
 
     // 5. Documentation file upload
     var fileInput = $("input[name='word_doc_0']");
@@ -497,7 +509,14 @@ $(document).ready(function () {
 
     btn.prop(
       "disabled",
-      !(designationOk && locationOk && dateOk && agencyOk && documentationOk),
+      !(
+        designationOk &&
+        locationOk &&
+        dateOk &&
+        agencySelected &&
+        advertiseOk &&
+        documentationOk
+      ),
     );
   }
 
@@ -508,6 +527,12 @@ $(document).ready(function () {
   );
 
   $("input[name='word_doc_0']").on("change", updateSubmitButton);
+
+  $(document).on(
+    "change",
+    'input[name^="metadata_field_select_446182"]',
+    updateSubmitButton,
+  );
 
   $(
     "#metadata_field_date_445509_datetimevalue_d, #metadata_field_date_445509_datetimevalue_m, #metadata_field_date_445509_datetimevalue_y",
