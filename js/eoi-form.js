@@ -6,8 +6,8 @@
  *
  * ## Overview
  * The form is a Squiz Matrix asset-builder page. On DOMContentLoaded this
- * script runs the following setup steps, then jQuery ready handles ongoing
- * event-driven behaviour:
+ * script runs the following setup steps, then plain DOM event listeners handle
+ * ongoing event-driven behaviour:
  *
  *   1. Declaration section — auto-checks the hidden declaration checkbox
  *      (#metadata_field_select_691088_declare) and hides both the #declaration
@@ -47,7 +47,6 @@
  *      that case is informational, not a hard error.
  *
  * ## Dependencies
- * - jQuery 3.4.1 (loaded by the CMS page template before this script)
  * - Squiz Matrix global `submit_form(form, bool)` (injected by CMS at runtime)
  * - FontAwesome Pro (loaded by the CMS asset pipeline; dev kit in reference HTML)
  *   Icon used: fas fa-spinner-third fa-spin (inside the submit button on submit)
@@ -106,7 +105,7 @@
 // 1. DOMContentLoaded — declaration hide, button replacement, click validation
 // ---------------------------------------------------------------------------
 /**
- * Runs synchronously on DOMContentLoaded (before jQuery ready) to ensure:
+ * Runs synchronously on DOMContentLoaded to ensure:
  *   a) The declaration section is hidden before the user sees the page.
  *   b) The CMS <input type="submit"> is replaced with a <button type="submit">
  *      before any other code references #sq_commit_button, so the button can
@@ -155,13 +154,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (!allFilled) {
         // Surface the CMS error banner (.ntgc-form-alerts--error) if present
-        const errorDiv = $(".ntgc-form-alerts.ntgc-form-alerts--error");
-        if (errorDiv.length) {
-          errorDiv.css("display", "block");
-          errorDiv.html(`
+        const errorDiv = document.querySelector(
+          ".ntgc-form-alerts.ntgc-form-alerts--error",
+        );
+        if (errorDiv) {
+          errorDiv.style.display = "block";
+          errorDiv.innerHTML = `
                         <div style="width: 100%; color: var(--clr-status-danger, #A60F37); font-size: 14px; font-family: Roboto; font-weight: 400; line-height: 20px; word-wrap: break-word">The internal vacancy was not created. Ensure you have entered all required information and try again.</div>
-                    `);
-          $("html, body").animate({ scrollTop: errorDiv.offset().top }, 500);
+                    `;
+          errorDiv.scrollIntoView({ behavior: "smooth", block: "start" });
         }
         return;
       }
@@ -211,70 +212,109 @@ const EOI_VARIANT_SELECTOR =
   '[id$="_type_link"], [id$="_type_word_doc"]';
 
 function getVariantContexts() {
-  return $(EOI_VARIANT_SELECTOR);
+  return Array.from(document.querySelectorAll(EOI_VARIANT_SELECTOR));
 }
 
 function getActiveVariantContext() {
-  return getVariantContexts()
-    .filter(function () {
-      return $(this).css("display") !== "none";
-    })
-    .first();
+  return (
+    getVariantContexts().find(function (context) {
+      return window.getComputedStyle(context).display !== "none";
+    }) || null
+  );
 }
 
-function getVariantMode($context) {
-  var contextId = $context.attr("id") || "";
+function getVariantMode(context) {
+  var contextId = context?.id || "";
   return contextId.endsWith("_type_word_doc") ? "word_doc" : "link";
 }
 
-function findOne($context, selector) {
-  if (!$context || !$context.length) {
-    return $();
+function findOne(context, selector) {
+  if (!context) {
+    return null;
   }
 
-  var element = $context[0].querySelector(selector);
-  return element ? $(element) : $();
+  return context.querySelector(selector);
 }
 
-function findAll($context, selector) {
-  if (!$context || !$context.length) {
-    return $();
+function findAll(context, selector) {
+  if (!context) {
+    return [];
   }
 
-  return $($context[0].querySelectorAll(selector));
+  return Array.from(context.querySelectorAll(selector));
 }
 
 function getAgencyCode(value) {
   return (value || "").replace(/\s+/g, "");
 }
 
-function getAdvertiseCheckboxPrefix($context) {
-  return "metadata_field_select_446182_" + getVariantMode($context) + "_";
+function getAdvertiseCheckboxPrefix(context) {
+  return "metadata_field_select_446182_" + getVariantMode(context) + "_";
 }
 
-function populateCloseDateFields($context) {
+function setDisplayed(element, isVisible) {
+  if (element) {
+    element.style.display = isVisible ? "" : "none";
+  }
+}
+
+function toggleClass(element, className, isEnabled) {
+  if (element) {
+    element.classList.toggle(className, isEnabled);
+  }
+}
+
+function setChecked(element, isChecked) {
+  if (element) {
+    element.checked = isChecked;
+  }
+}
+
+function setDisabled(element, isDisabled) {
+  if (element) {
+    element.disabled = isDisabled;
+  }
+}
+
+function getSelectValues(select) {
+  if (!select) {
+    return [];
+  }
+
+  if (select.multiple) {
+    return Array.from(select.selectedOptions)
+      .map(function (option) {
+        return option.value;
+      })
+      .filter(Boolean);
+  }
+
+  return select.value ? [select.value] : [];
+}
+
+function populateCloseDateFields(context) {
   var dayField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_d"]',
   );
   var monthField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_m"]',
   );
   var yearField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_y"]',
   );
   var hourField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_h"]',
   );
   var minuteField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_i"]',
   );
 
-  if (!dayField.length || !monthField.length || !yearField.length) {
+  if (!dayField || !monthField || !yearField) {
     return;
   }
 
@@ -283,11 +323,11 @@ function populateCloseDateFields($context) {
     today.setDate(today.getDate() + (today.getDay() < 3 ? 3 : 5)),
   );
 
-  dayField.val(String(closeDate.getDate()));
-  monthField.val(String(closeDate.getMonth() + 1));
-  yearField.val(String(closeDate.getFullYear()));
-  hourField.val("23");
-  minuteField.val("45");
+  dayField.value = String(closeDate.getDate());
+  monthField.value = String(closeDate.getMonth() + 1);
+  yearField.value = String(closeDate.getFullYear());
+  if (hourField) hourField.value = "23";
+  if (minuteField) minuteField.value = "45";
 }
 
 function countWorkingDays(start, end) {
@@ -305,31 +345,32 @@ function countWorkingDays(start, end) {
   return count;
 }
 
-function syncAdvertiseRows($context) {
+function syncAdvertiseRows(context) {
   var sites = findAll(
-    $context,
+    context,
     '#advertise-selection table input[type="checkbox"]',
   );
-  var siteRows = findAll($context, '#advertise-selection table tr');
+  var siteRows = findAll(context, '#advertise-selection table tr');
   var agencyField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_select_445640_"]',
   );
-  var agencyValue = agencyField.val();
-  var advertisePrefix = getAdvertiseCheckboxPrefix($context);
+  var agencyValue = agencyField ? agencyField.value : "";
+  var advertisePrefix = getAdvertiseCheckboxPrefix(context);
   var ntgcId = advertisePrefix + "WoG";
   var agencyCheckboxId = advertisePrefix + getAgencyCode(agencyValue);
 
-  siteRows.hide();
-  siteRows.first().show();
+  siteRows.forEach(function (row, index) {
+    setDisplayed(row, index === 0);
+  });
 
-  sites.each(function (index) {
-    if (this.id !== ntgcId) {
-      $(this).prop("checked", false);
-      if (agencyValue && this.id === agencyCheckboxId) {
-        $(siteRows[index]).show();
+  sites.forEach(function (site, index) {
+    if (site.id !== ntgcId) {
+      setChecked(site, false);
+      if (agencyValue && site.id === agencyCheckboxId) {
+        setDisplayed(siteRows[index], true);
       } else {
-        $(siteRows[index]).hide();
+        setDisplayed(siteRows[index], false);
       }
     }
   });
@@ -338,181 +379,199 @@ function syncAdvertiseRows($context) {
     return;
   }
 
-  var agencyCheckbox = findOne($context, '[id="' + agencyCheckboxId + '"]');
-  if (!agencyCheckbox.length) {
-    findOne($context, '[id="' + ntgcId + '"]').prop("checked", true);
+  var agencyCheckbox = findOne(context, '[id="' + agencyCheckboxId + '"]');
+  if (!agencyCheckbox) {
+    setChecked(findOne(context, '[id="' + ntgcId + '"]'), true);
   } else {
-    agencyCheckbox.prop("checked", true);
-    agencyCheckbox.closest("tr").show();
+    setChecked(agencyCheckbox, true);
+    setDisplayed(agencyCheckbox.closest("tr"), true);
   }
 }
 
-function getVariantState($context) {
+function getVariantState(context) {
   var designationField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_select_445634_"]',
   );
   var locationField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_select_445518_"]',
   );
   var agencyField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_select_445640_"]',
   );
   var dayField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_d"]',
   );
   var monthField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_m"]',
   );
   var yearField = findOne(
-    $context,
+    context,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_y"]',
   );
   var advertiseCheckboxes = findAll(
-    $context,
+    context,
     'input[name^="metadata_field_select_446182_"]',
   );
   var idField = findOne(
-    $context,
+    context,
     'input[id^="metadata_field_text_998904_"][id$="_value"]',
   );
-  var fileInput = findOne($context, "input[name='word_doc_0']");
-  var agencyValue = agencyField.val();
-  var advertisePrefix = getAdvertiseCheckboxPrefix($context);
+  var fileInput = findOne(context, "input[name='word_doc_0']");
+  var agencyValue = agencyField ? agencyField.value : "";
+  var advertisePrefix = getAdvertiseCheckboxPrefix(context);
   var agencyCheckboxId = advertisePrefix + getAgencyCode(agencyValue);
-  var isLinkMode = getVariantMode($context) === "link";
-  var designationSelected = designationField.val();
-  var locationSelected = locationField.val();
+  var isLinkMode = getVariantMode(context) === "link";
+  var designationSelected = getSelectValues(designationField);
+  var locationSelected = getSelectValues(locationField);
 
   return {
     designationField,
-    designationOk: !!(designationSelected && designationSelected.length > 0),
+    designationOk: designationSelected.length > 0,
     locationField,
-    locationOk: !!(locationSelected && locationSelected.length > 0),
+    locationOk: locationSelected.length > 0,
     agencyField,
     agencySelected: !!agencyValue,
     agencyHasDedicatedRow:
-      !!agencyValue && findOne($context, '[id="' + agencyCheckboxId + '"]').length > 0,
-    advertiseOk: advertiseCheckboxes.filter(":checked").length > 0,
+      !!agencyValue && !!findOne(context, '[id="' + agencyCheckboxId + '"]'),
+    advertiseOk: advertiseCheckboxes.some(function (checkbox) {
+      return checkbox.checked;
+    }),
     dayField,
     monthField,
     yearField,
     dateOk:
-      !!dayField.val() &&
-      dayField.val() !== "--" &&
-      !!monthField.val() &&
-      monthField.val() !== "--" &&
-      !!yearField.val() &&
-      yearField.val() !== "--",
+      !!dayField?.value &&
+      dayField.value !== "--" &&
+      !!monthField?.value &&
+      monthField.value !== "--" &&
+      !!yearField?.value &&
+      yearField.value !== "--",
     isLinkMode,
     idField,
-    idFieldOk: !isLinkMode || !!(idField.length && idField.val().trim()),
+    idFieldOk: !isLinkMode || !!(idField && idField.value.trim()),
     fileInput,
     documentationOk:
       isLinkMode ||
-      (fileInput.length > 0 &&
-        fileInput[0].files &&
-        fileInput[0].files.length > 0),
+      !!(fileInput && fileInput.files && fileInput.files.length > 0),
   };
 }
 
-function checkCloseDateWarning($context) {
-  var $activeContext = $context && $context.length ? $context : getActiveVariantContext();
-  if (!$activeContext.length) {
+function checkCloseDateWarning(context) {
+  var activeContext = context || getActiveVariantContext();
+  if (!activeContext) {
     return;
   }
 
   var dayField = findOne(
-    $activeContext,
+    activeContext,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_d"]',
   );
   var monthField = findOne(
-    $activeContext,
+    activeContext,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_m"]',
   );
   var yearField = findOne(
-    $activeContext,
+    activeContext,
     'select[id^="metadata_field_date_445509_"][id$="_datetimevalue_y"]',
   );
-  var warning = findOne($activeContext, '[id="date-close-warning"]');
+  var warning = findOne(activeContext, '[id="date-close-warning"]');
 
-  if (!dayField.length || !monthField.length || !yearField.length) {
+  if (!dayField || !monthField || !yearField) {
     return;
   }
 
   if (
-    !dayField.val() ||
-    dayField.val() === "--" ||
-    !monthField.val() ||
-    monthField.val() === "--" ||
-    !yearField.val() ||
-    yearField.val() === "--"
+    !dayField.value ||
+    dayField.value === "--" ||
+    !monthField.value ||
+    monthField.value === "--" ||
+    !yearField.value ||
+    yearField.value === "--"
   ) {
-    warning.hide();
-    dayField.add(monthField).add(yearField).removeClass("ntgc-date--error");
+    setDisplayed(warning, false);
+    [dayField, monthField, yearField].forEach(function (field) {
+      toggleClass(field, "ntgc-date--error", false);
+    });
     return;
   }
 
   var selectedDate = new Date(
-    parseInt(yearField.val(), 10),
-    parseInt(monthField.val(), 10) - 1,
-    parseInt(dayField.val(), 10),
+    parseInt(yearField.value, 10),
+    parseInt(monthField.value, 10) - 1,
+    parseInt(dayField.value, 10),
   );
   var today = new Date();
   today.setHours(0, 0, 0, 0);
-  var dateFields = dayField.add(monthField).add(yearField);
 
   if (countWorkingDays(today, selectedDate) < 3) {
-    warning.show();
-    dateFields.addClass("ntgc-date--error");
+    setDisplayed(warning, true);
+    [dayField, monthField, yearField].forEach(function (field) {
+      toggleClass(field, "ntgc-date--error", true);
+    });
   } else {
-    warning.hide();
-    dateFields.removeClass("ntgc-date--error");
+    setDisplayed(warning, false);
+    [dayField, monthField, yearField].forEach(function (field) {
+      toggleClass(field, "ntgc-date--error", false);
+    });
   }
 }
 
-function getActiveSubmitButton($context) {
-  var $activeContext = $context && $context.length ? $context : getActiveVariantContext();
-  return findOne($activeContext, '[id="sq_commit_button"]');
+function getActiveSubmitButton(context) {
+  var activeContext = context || getActiveVariantContext();
+  return findOne(activeContext, '[id="sq_commit_button"]');
 }
 
-function updateSubmitButton($context) {
-  var $activeContext = $context && $context.length ? $context : getActiveVariantContext();
-  var btn = getActiveSubmitButton($activeContext);
+function updateSubmitButton(context) {
+  var activeContext = context || getActiveVariantContext();
+  var btn = getActiveSubmitButton(activeContext);
 
-  if (!btn.length || !$activeContext.length) {
-    $(document.querySelectorAll('[id="sq_commit_button"]')).prop("disabled", true);
+  if (!btn || !activeContext) {
+    document
+      .querySelectorAll('[id="sq_commit_button"]')
+      .forEach(function (button) {
+        setDisabled(button, true);
+      });
     return false;
   }
 
-  var state = getVariantState($activeContext);
+  var state = getVariantState(activeContext);
 
-  findOne($activeContext, '[id="designation-warning"]').toggle(!state.designationOk);
-  state.designationField.toggleClass("ntgc-select--error", !state.designationOk);
+  setDisplayed(
+    findOne(activeContext, '[id="designation-warning"]'),
+    !state.designationOk,
+  );
+  toggleClass(state.designationField, "ntgc-select--error", !state.designationOk);
 
-  findOne($activeContext, '[id="location-warning"]').toggle(!state.locationOk);
-  state.locationField.toggleClass("ntgc-select--error", !state.locationOk);
+  setDisplayed(
+    findOne(activeContext, '[id="location-warning"]'),
+    !state.locationOk,
+  );
+  toggleClass(state.locationField, "ntgc-select--error", !state.locationOk);
 
-  findOne($activeContext, '[id="agency-advertise-warning"]').toggle(
+  setDisplayed(
+    findOne(activeContext, '[id="agency-advertise-warning"]'),
     state.agencySelected && !state.agencyHasDedicatedRow,
   );
-  state.agencyField.toggleClass(
+  toggleClass(
+    state.agencyField,
     "ntgc-select--error",
     state.agencySelected && !state.agencyHasDedicatedRow,
   );
 
   if (state.isLinkMode) {
-    state.idField.toggleClass("ntgc-select--error", !state.idFieldOk);
-    findOne($activeContext, '[id="documentation-warning"]').hide();
+    toggleClass(state.idField, "ntgc-select--error", !state.idFieldOk);
+    setDisplayed(findOne(activeContext, '[id="documentation-warning"]'), false);
   } else {
-    findOne($activeContext, '[id="documentation-warning"]').toggle(
+    setDisplayed(
+      findOne(activeContext, '[id="documentation-warning"]'),
       !state.documentationOk,
     );
-    state.fileInput.toggleClass("ntgc-file--error", !state.documentationOk);
+    toggleClass(state.fileInput, "ntgc-file--error", !state.documentationOk);
   }
 
   var isValid =
@@ -524,66 +583,64 @@ function updateSubmitButton($context) {
     state.idFieldOk &&
     state.documentationOk;
 
-  btn.prop("disabled", !isValid);
+  setDisabled(btn, !isValid);
   return isValid;
 }
 
 function updateActiveVariantState() {
-  var $activeContext = getActiveVariantContext();
-  checkCloseDateWarning($activeContext);
-  return updateSubmitButton($activeContext);
+  var activeContext = getActiveVariantContext();
+  checkCloseDateWarning(activeContext);
+  return updateSubmitButton(activeContext);
 }
 
 function validateActiveVariantForSubmit() {
-  var $activeContext = getActiveVariantContext();
-  if (!$activeContext.length) {
+  var activeContext = getActiveVariantContext();
+  if (!activeContext) {
     return false;
   }
 
   var durationField = findOne(
-    $activeContext,
+    activeContext,
     'input[id^="metadata_field_text_445506_"][id$="_value"]',
   );
-  var durationOk = !durationField.length || !!durationField.val().trim();
+  var durationOk = !durationField || !!durationField.value.trim();
 
-  durationField.toggleClass("error", !durationOk);
+  toggleClass(durationField, "error", !durationOk);
 
   return updateActiveVariantState() && durationOk;
 }
 
 // ---------------------------------------------------------------------------
-// 3. jQuery ready — date pre-population, advertise filter, change listeners
+// 3. DOMContentLoaded — date pre-population, advertise filter, change listeners
 // ---------------------------------------------------------------------------
-$(document).ready(function () {
-  getVariantContexts().each(function () {
-    var $context = $(this);
-    populateCloseDateFields($context);
-    syncAdvertiseRows($context);
+document.addEventListener("DOMContentLoaded", function () {
+  getVariantContexts().forEach(function (context) {
+    populateCloseDateFields(context);
+    syncAdvertiseRows(context);
   });
 
   // -- Change listeners ----------------------------------------------------
-  $(document).on(
-    "change",
-    'select[id^="metadata_field_select_445640_"]',
-    function () {
-      syncAdvertiseRows($(this).closest(EOI_VARIANT_SELECTOR));
+  document.addEventListener("change", function (event) {
+    if (event.target.matches('select[id^="metadata_field_select_445640_"]')) {
+      syncAdvertiseRows(event.target.closest(EOI_VARIANT_SELECTOR));
       updateActiveVariantState();
-    },
-  );
+      return;
+    }
 
-  $(document).on(
-    "change",
-    'select[id^="metadata_field_select_445634_"], select[id^="metadata_field_select_445518_"], input[name="word_doc_0"], input[name^="metadata_field_select_446182_"], select[id^="metadata_field_date_445509_"][id*="_datetimevalue_"]',
-    updateActiveVariantState,
-  );
+    if (
+      event.target.matches(
+        'select[id^="metadata_field_select_445634_"], select[id^="metadata_field_select_445518_"], input[name="word_doc_0"], input[name^="metadata_field_select_446182_"], select[id^="metadata_field_date_445509_"][id*="_datetimevalue_"]',
+      )
+    ) {
+      updateActiveVariantState();
+    }
+  });
 
-  $(document).on(
-    "click",
-    '[id$="_type_link_tab"] a, [id$="_type_word_doc_tab"] a',
-    function () {
+  document.addEventListener("click", function (event) {
+    if (event.target.closest('[id$="_type_link_tab"] a, [id$="_type_word_doc_tab"] a')) {
       window.requestAnimationFrame(updateActiveVariantState);
-    },
-  );
+    }
+  });
 
   // -- Initial state -------------------------------------------------------
   // Run both checks after the date is pre-populated so the page starts in the
