@@ -113,6 +113,7 @@
  */
 document.addEventListener("DOMContentLoaded", function () {
   // Auto-check the declaration checkbox and hide the entire section
+
   const declaration = document.getElementById("declaration");
   if (declaration) {
     const declarationCheckbox = document.getElementById(

@@ -1,0 +1,72 @@
+<style>
+    .ntgc-form-alerts--error {
+        display:none;
+    }
+</style>
+
+<script>
+console.log("Form loaded");
+
+$(document).ready(function() {
+
+    const errorDiv = $(".ntgc-form-alerts.ntgc-form-alerts--error");
+
+    // Check if the div exists and contains the specific error message
+    if (errorDiv.length && errorDiv.data("error-text")) {
+        const errorMessage = errorDiv.data("error-text");
+
+        // Log the error message to the console
+        console.log("Error message found:", errorMessage);
+
+        // Remove 'display: none;' if it exists
+        errorDiv.css("display", "block");
+
+        // Update the alert message content
+        errorDiv.html(`
+            <p>The internal vacancy was not created. Ensure you have entered all required information and try again.</p>
+        `);
+
+        // Scroll to the error message
+        $('html, body').animate({
+            scrollTop: errorDiv.offset().top
+        }, 500);
+
+    }
+});
+</script>
+
+
+<script>
+$(document).ready(function() {
+    // Function to check the selected checkboxes
+    function validateCheckboxes() {
+        const checkboxes = $("input[name^='metadata_field_select_446182']");
+        const ntgCentral = $("#metadata_field_select_446182_WoG");
+        const selectedCount = checkboxes.filter(":checked").length;
+
+        // If NTG Central is selected
+        if (ntgCentral.is(":checked")) {
+            // If more than 2 are checked (NTG Central + one other agency), alert and reset
+            if (selectedCount > 2) {
+                 console.log("You can only select NTG Central and one other agency.");
+                ntgCentral.prop("checked", true); // Keep NTG Central checked
+                checkboxes.not(ntgCentral).prop("checked", false); // Uncheck others
+            }
+        } else {
+            // If NTG Central is not checked
+            if (selectedCount > 1) { // Only one agency can be selected
+                 console.log("You can only select one agency.");
+                checkboxes.not(ntgCentral).prop("checked", false); // Uncheck other agencies
+                checkboxes.filter("#metadata_field_select_446182_WoG").prop("checked", false); // Ensure NTG Central is unchecked
+            }
+            // Ensure at least one agency is selected
+            else if (selectedCount === 0) {
+                console.log("Please select NTG Central or one agency.");
+            }
+        }
+    }
+
+    // Bind the change event to the checkboxes
+    $("input[name^='metadata_field_select_446182']").on("change", validateCheckboxes);
+});
+</script>

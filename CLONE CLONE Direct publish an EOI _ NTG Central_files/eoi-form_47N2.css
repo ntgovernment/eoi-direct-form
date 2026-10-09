@@ -1,0 +1,187 @@
+/**
+ * eoi-form.css
+ * ------------
+ * Custom styles for the "Directly publish an expression of interest" form
+ * on NTG Central (Squiz Matrix CMS).
+ *
+ * ## Structure
+ * Styles are grouped in the order they appear in the form:
+ *   1. CMS layout overrides  — hides Squiz Matrix boilerplate table rows and
+ *                              the section heading injected by the asset builder.
+ *   2. Designation           — sets a fixed min-height on the multi-select and
+ *                              removes the default background chevron image.
+ *   3. Close date            — hides the hour/minute time selects (set to 23:45
+ *                              by eoi-form.js; not user-editable) and the colon
+ *                              separator between them.
+ *   4. Declaration           — CSS-side fallback: hides all rows in #declaration
+ *                              except the first. The JS (eoi-form.js) fully hides
+ *                              the entire #declaration div and its label on load,
+ *                              so these rules are a belt-and-braces safety net.
+ *   5. Inline field warnings — shared danger-colour text style applied to all
+ *                              warning <div> elements.
+ *   6. Error state borders   — red borders/outlines on invalid inputs, toggled
+ *                              by eoi-form.js → updateSubmitButton().
+ *
+ * ## Error CSS classes (toggled by js/eoi-form.js → updateSubmitButton)
+ * | Class                | Applied to                                    |
+ * |----------------------|-----------------------------------------------|
+ * | .ntgc-date--error    | Close-date day / month / year <select>s       |
+ * | .ntgc-select--error  | Designation, Location, Agency <select>s       |
+ * | .ntgc-file--error    | Documentation file <input>                    |
+ *
+ * ## Warning element IDs (hidden by default; shown/hidden by JS)
+ * | ID                        | Field                                    |
+ * |---------------------------|------------------------------------------|
+ * | #date-close-warning       | Close date (< 3 business days from today)|
+ * | #designation-warning      | Designation (nothing selected)           |
+ * | #location-warning         | Location (nothing selected)              |
+ * | #agency-advertise-warning | Agency with no matching advertise row    |
+ * | #documentation-warning    | Documentation (no file attached)         |
+ *
+ * ## Submit button
+ * The button (#sq_commit_button) is a <button type="submit"> element created
+ * at runtime by eoi-form.js (replacing the CMS <input type="submit">). Its
+ * visual styles come entirely from the NTG Central design system classes
+ * (ntgc-btn ntgc-btn--primary) — no custom button CSS is needed here.
+ * The ntgc-file-upload class that the CMS adds is explicitly removed by JS.
+ *
+ * ## Dependencies
+ * - NTG Central design system (main.css) — provides CSS custom properties:
+ *     --clr-status-danger  (#a60f37 fallback used by warning text and borders)
+ * - Roboto font (loaded by the CMS page template)
+ */
+
+/* EOI Direct Form styles */
+
+.sq-limbo-section-heading {
+  display: none;
+}
+
+tr[data-attribute-filter*="file-name"],
+tr[data-attribute-filter*="title"],
+tr[data-attribute-filter*="allowunrestrictedaccess"] {
+  display: none !important;
+}
+
+tr[data-attribute-filter*="file"] > td:nth-of-type(1) {
+  display: none;
+}
+
+.sq-form-upload {
+  margin-bottom: 1rem;
+}
+
+div[data-ref="designation"] select {
+  min-height: 180px;
+  background-image: none;
+}
+
+.ntgc-table__cell {
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
+
+div[data-ref="location"] .ntgc-table__wrapper,
+div[data-ref="homepage"] .ntgc-table__wrapper,
+div[data-ref="platforms"] .ntgc-table__wrapper {
+  margin-top: 0.5rem !important;
+}
+
+.sq-metadata-date-wrapper select.ntgc-select--block {
+  display: inline-block;
+  width: 6rem;
+}
+
+.sq-metadata-date-wrapper .sq-inline-fields-wrapper:nth-of-type(2),
+.sq-metadata-date-wrapper .sq-inline-fields-wrapper:nth-of-type(3) {
+  display: none;
+}
+
+div[data-ref="file-upload"] .sq-backend-smallprint {
+  display: none;
+}
+
+/*Hide time*/
+#metadata_field_date_445509_datetimevalue_h,
+#metadata_field_date_445509_datetimevalue_i {
+  visibility: hidden;
+}
+
+/*Hide the colon between hour and minutes*/
+div.sq-metadata-date-wrapper {
+  color: white;
+
+  & select {
+    margin-bottom: 0;
+  }
+}
+
+/*Approvals Hide Yes/No*/
+#declaration tr {
+  display: none;
+}
+
+#declaration tr:first-child {
+  display: block;
+}
+
+/*Arrange Agency names in 2 columns
+@media (min-width: 1280px) {
+    #advertise-selection{
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        column-count: 2;
+        -webkit-column-gap: 1em;
+        -moz-column-gap: 1em;
+        column-gap: 1em;
+    }
+}*/
+
+.ntgc-tip {
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+}
+
+#date-close-warning {
+  width: 100%;
+  color: var(--clr-status-danger, #a60f37);
+  font-size: 14px;
+  font-family: Roboto, sans-serif;
+  font-weight: 400;
+  line-height: 20px;
+  word-wrap: break-word;
+  margin-top: -16px;
+}
+
+#metadata_field_date_445509_datetimevalue_d.ntgc-date--error,
+#metadata_field_date_445509_datetimevalue_m.ntgc-date--error,
+#metadata_field_date_445509_datetimevalue_y.ntgc-date--error {
+  border-color: var(--clr-status-danger, #a60f37) !important;
+}
+
+#designation-warning,
+#location-warning,
+#agency-advertise-warning,
+#documentation-warning {
+  width: 100%;
+  color: var(--clr-status-danger, #a60f37);
+  font-size: 14px;
+  font-family: Roboto, sans-serif;
+  font-weight: 400;
+  line-height: 20px;
+  word-wrap: break-word;
+  margin-top: 4px;
+}
+
+#metadata_field_select_445634.ntgc-select--error,
+#metadata_field_select_445518.ntgc-select--error {
+  border-color: var(--clr-status-danger, #a60f37) !important;
+}
+
+#metadata_field_select_445640.ntgc-select--error {
+  border-color: var(--clr-status-danger, #a60f37) !important;
+}
+
+input[name="word_doc_0"].ntgc-file--error {
+  outline: 2px solid var(--clr-status-danger, #a60f37);
+}
