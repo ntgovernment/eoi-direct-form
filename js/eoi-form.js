@@ -96,18 +96,13 @@
  * #agency-advertise-warning is shown and the NTG Central checkbox is
  * auto-checked in its place, so the form can still be submitted.
  */
+(($) => {
 
-document.addEventListener('DOMContentLoaded', enhanceForm);
+let context;
+$('body').ready(enhanceForm);
 
 function enhanceForm() {
     errorChecks();
-    let __context__;
-    const context = {
-      get() { return __context__ },
-      set(value) {
-        __context__ = value;
-      }
-    };
     const wrappers = $('[id^="page_asset_builder"');
     const observer = new MutationObserver((mutations) => {
       [context] = mutations.filter((mutation) => (
@@ -120,7 +115,7 @@ function enhanceForm() {
     }  
 
     // Event delegated to all agency of each context with active
-    $('body').on('change', 'input[name^="metadata_field_select_446182"]', { context }, validateCheckboxes);
+    $('body').on('change', 'input[name^="metadata_field_select_446182"]', validateCheckboxes);
 
     // Auto-check the declaration checkbox and hide the entire section
     // NOTE: declaration to not exisat anymore
@@ -174,7 +169,7 @@ function enhanceForm() {
     // Remove the CMS-injected inline onclick so we fully control submission
     //commitButton.removeAttribute('onclick');
 
-    $('body').on('click', submitBtnId, { context }, function (event) {
+    $('body').on('click', submitBtnId, function (event) {
         event.preventDefault();
         const { context } = event;
         /**
@@ -264,13 +259,10 @@ function enhanceForm() {
             this.form.submit();
         }
     });
-  }
 
     // ---------------------------------------------------------------------------
     // 3. jQuery ready — date pre-population, advertise filter, change listeners
     // ---------------------------------------------------------------------------
-    // -- Element references --------------------------------------------------
-  var agency = $('#metadata_field_select_445640');
 
   /**
    * `sites`    — all checkbox inputs inside the advertise-selection table.
@@ -341,7 +333,7 @@ function enhanceForm() {
    *      fall back to checking NTG Central only.
    *   5. Re-evaluate submit button state.
    */
-  $(agency).on('change', function () {
+  $('body').on('change', '#metadata_field_select_445640', function () {
     var agencyValue = this.value;
     var agencyId = `#metadata_field_select_446182_${agencyValue.replaceAll(' ', ')}`;
 
@@ -630,3 +622,4 @@ function addWorkingDays(date, days) {
   }
   return result;
 }
+}, jQuery);
