@@ -96,14 +96,144 @@
  * #agency-advertise-warning is shown and the NTG Central checkbox is
  * auto-checked in its place, so the form can still be submitted.
  */
+
+const ID_SELECTORS = {
+  date: {
+    year: '[id^="metadata_field_date_445509"][id$="_datetimevalue_y"]',
+    month: '[id^="metadata_field_date_445509"][id$="_datetimevalue_m"]',
+    day: '[id^="metadata_field_date_445509"][id$="_datetimevalue_d"]',
+    hour: '[id^="metadata_field_date_445509"][id$="_datetimevalue_h"]',
+    min: '[id^="metadata_field_date_445509"][id$="_datetimevalue_i"]',
+  }
+}
 (($) => {
 
 let context;
 $('body').ready(enhanceForm);
 
 function enhanceForm() {
-    errorChecks();
-    const wrappers = $('[id^="page_asset_builder"');
+  // Not jQuery here jq will just find the visible, we hand to enhance both
+  const submitBtnId = '#sq_commit_button';
+  const inputBtns = context.parentElement.querySelectorAll(submitBtnId);
+  if (!inputBtns.length) {
+      console.error('Commit button not found in the DOM.');
+      return;
+  }
+
+  serverErrorChecks();
+  /* setup context */
+  const wrappers = $('[id^="page_asset_builder"].sq-asset-builder-tab-content');
+  const observer = new MutationObserver((mutations) => {
+    [context] = mutations.filter((mutation) => (
+      mutation.type === 'attributes' &&
+      mutation.target.style.display !== 'none'
+    ));
+  });
+  for (const wrapper of wrappers) {
+    observer.observe(wrapper, { attributes: true });
+  }
+
+  // DOM MAIPULATION RUN ONCE FOR ALL CONTEXTS
+
+  // ---------------------------------------------------------------------------
+  // 1. DOMContentLoaded — declaration hide, button replacement, click validation
+  // ---------------------------------------------------------------------------
+  /**
+   * Runs synchronously on DOMContentLoaded (before jQuery ready) to ensure:
+   *   a) ~~The declaration section is hidden before the user sees the page.~~
+   *      NO LONGER EXISTS
+   *   b) The CMS <input type='submit'> is replaced with a <button type='submit'>
+   *      before any other code references #sq_commit_button, so the button can
+   *      hold child elements (e.g. the spinner icon injected on submit).
+   *   c) The button starts disabled — updateSubmitButton() enables it once all
+   *      required fields are filled.
+   */
+  // Replace <input type='submit'> with <button type='submit'> so child
+  for (const inputBtn of inputBtns) {
+    // elements (e.g. spinner icon) can be rendered inside the button.
+    const commitButton = document.createElement('button');
+    commitButton.type = 'submit';
+    commitButton.id = inputBtn.id;
+    commitButton.className = inputBtn.className;
+    commitButton.classList.remove('ntgc-file-upload');
+    commitButton.textContent = 'Submit';
+    // Disable immediately — updateSubmitButton() will re-enable when valid
+    commitButton.disabled = true;
+    inputBtn.parentNode.replaceChild(commitButton, inputBtn);
+  }
+
+  // Hide all advertise rows on load; the first row (NTG Central) stays visible
+  $('#advertise-selection tr:not(:first-child)').hide();
+  
+  // -- Pre-populate close date ---------------------------------------------
+  /**
+   * Default close date rule:
+   *   - If today is Mon or Tue (getDay < 3): add 3 calendar days → lands Thu/Fri
+   *   - Otherwise: add 5 calendar days → skips the weekend
+   * This ensures the default is always at least 3 business days ahead.
+   * Hour is set to 23:45 (hidden from users via CSS) to expire at end of day.
+   */
+  const today = new Date();
+  const closeDate = new Date(
+    today.setDate(today.getDate() + (today.getDay() < 3 ? 3 : 5)),
+  );
+  // the complex selectors will find for both contexts
+  // ie [wrapers.length] times duplicates and set them
+  $([
+    `${ID_SELECTORS.date.day} [value="${ closeDate.getDate() }"]`,
+    `${ID_SELECTORS.date.month} [value="${ closeDate.getMonth() + 1 }"]`,
+    `${ID_SELECTORS.date.year} [value="${ closeDate.getFullYear() }"]`,
+    `${ID_SELECTORS.date.hour} [value="23"]`,
+    `${ID_SELECTORS.date.min} [value="59"]`,
+  ].join(',')).prop('selected', true);
+
+  setupFieldSyncing(ID_SELECTORS.date.join(','));
+
+  // Event delegated to all agency of each context with active
+  $('body').on('change', 'input[name^="metadata_field_select_446182"]', validateCheckboxes);
+
+}
+
+function validateCheckboxes(event) {
+    const checked = $('[name^="metadata_field_select_446182"]:checked');
+    if (checked.length > 2) {
+      event.preventDefault();
+    }
+    /*
+    const checkboxes = $('[name^="metadata_field_select_446182"]');
+    const ntgCentral = $('[id^="metadata_field_select_446182][id$="_WoG"]');
+    const selectedCount = checkboxes.filter(':checked').length;
+
+    // If NTG Central is selected
+    if (ntgCentral.is(':checked')) {
+        // If more than 2 are checked (NTG Central + one other agency), alert and reset
+        if (selectedCount > 2) {
+            console.log('You can only select NTG Central and one other agency.');
+            ntgCentral.prop('checked', true); // Keep NTG Central checked
+            checkboxes.not(ntgCentral).prop('checked', false); // Uncheck others
+        }
+    } else {
+        // If NTG Central is not checked
+        if (selectedCount > 1) { // Only one agency can be selected
+            console.log('You can only select one agency.');
+            checkboxes.not(ntgCentral).prop('checked', false); // Uncheck other agencies
+            ntgCentral.prop('checked', false); // Ensure NTG Central is unchecked
+        }
+        // Ensure at least one agency is selected
+        else if (selectedCount === 0) {
+            console.log('Please select NTG Central or one agency.');
+        }
+    }
+    */
+}
+
+function setupFieldSyncing(selectors) {
+  console.warn('TODO');
+}
+
+function NOPEenhanceForm() {
+    serverErrorChecks();
+    const wrappers = $('[id^="page_asset_builder"].sq-asset-builder-tab-content');
     const observer = new MutationObserver((mutations) => {
       [context] = mutations.filter((mutation) => (
         mutation.type === 'attributes' &&
@@ -550,9 +680,9 @@ function enhanceForm() {
   updateSubmitButton();
 }
 
-function validateCheckboxes({data:{context}}) {
-    const checkboxes = $('[name^="metadata_field_select_446182"]', context);
-    const ntgCentral = $('[id^="metadata_field_select_446182][id$="_WoG"]', context);
+function validateCheckboxes() {
+    const checkboxes = $('[name^="metadata_field_select_446182"]');
+    const ntgCentral = $('[id^="metadata_field_select_446182][id$="_WoG"]');
     const selectedCount = checkboxes.filter(':checked').length;
 
     // If NTG Central is selected
@@ -577,7 +707,7 @@ function validateCheckboxes({data:{context}}) {
     }
 }
 
-function errorChecks() {
+function serverErrorChecks() {
     const errorDiv = $('.ntgc-form-alerts.ntgc-form-alerts--error');
 
     // Check if the div exists and contains the specific error message
