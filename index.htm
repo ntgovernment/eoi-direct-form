@@ -3403,28 +3403,24 @@
 
                             <div id="sq-asset-builder-header">
                                 <ul>
-                                    <li class="sq-asset-builder-tab" id="page_asset_builder_1002518_type_link_tab">
+                                    <li class="sq-asset-builder-tab-active"
+                                        id="page_asset_builder_1002518_type_link_tab">
                                         <a href="#" onclick="showAssetBuilderTab('link'); return false;">
                                             Link </a>
                                     </li>
-                                    <li class="sq-asset-builder-tab-active"
-                                        id="page_asset_builder_1002518_type_word_doc_tab">
+                                    <li class="sq-asset-builder-tab" id="page_asset_builder_1002518_type_word_doc_tab">
                                         <a href="#" onclick="showAssetBuilderTab('word_doc'); return false;">
                                             MS Word Document </a>
                                     </li>
                                 </ul>
                             </div>
-                            <div class="sq-asset-builder-tab-content" id="page_asset_builder_1002518_type_link"
-                                style="display: none;">
+                            <div class="sq-asset-builder-tab-content" id="page_asset_builder_1002518_type_link">
                                 <link type="text/css" rel="stylesheet"
                                     href="CLONE%20CLONE%20Direct%20publish%20an%20EOI%20_%20NTG%20Central_files/eoi-form_47N2.css">
                                 <div id="eoi-link" class="container">
                                     <div class="mb-4 news--type">
                                         <label for="metadata_field_text_998904_link_value" class="d-block mb-1">Apply
                                             now - Jobs NT id</label>
-                                        <input type="text" name="metadata_field_text_998904_link_value" size="30"
-                                            class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
-                                            id="metadata_field_text_998904_link_value">
                                         <div class="ntgc-tip">
                                             Enter the <code
                                                 style="background:transparent;font-size:1em">?rtfid=<code>VALUE</code></code>
@@ -3435,6 +3431,10 @@
                                                     class="data-icon data-icon--view-job far fa-arrow-to-bottom pl-1"></span></a>
                                             button.
                                         </div>
+                                        <input type="text" name="metadata_field_text_998904_link_value" size="30"
+                                            class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
+                                            id="metadata_field_text_998904_link_value">
+
                                         <div>
                                             <input type="text" name="link_0_206" size="35" aria-required="true"
                                                 required="" class="sq-form-field ntgc-text-input ntgc-text-input--block"
@@ -3460,8 +3460,8 @@
                                         <div class="ntgc-tip">Hold the 'CTRL' key and click to select multiple
                                             designations.</div>
                                         <input type="hidden" name="metadata_field_select_445634_link_posted" value="1"
-                                            class="sq-form-field" id="metadata_field_select_445634_link_posted"><select
-                                            name="metadata_field_select_445634_link[]"
+                                            class="sq-form-field" id="metadata_field_select_445634_link_posted">
+                                        <select name="metadata_field_select_445634_link[]"
                                             class="sq-form-field ntgc-select ntgc-select--block"
                                             id="metadata_field_select_445634_link" multiple="multiple">
                                             <option value="AO2">Administrative Officer 2</option>
@@ -4193,7 +4193,8 @@
                             </div>
                             <script type="text/javascript">
                             </script>
-                            <div class="sq-asset-builder-tab-content" id="page_asset_builder_1002518_type_word_doc">
+                            <div style="display: none;" class="sq-asset-builder-tab-content"
+                                id="page_asset_builder_1002518_type_word_doc">
                                 <div id="eoi-link" class="container">
                                     <div class="mb-2 adapt-squiz-screen" data-ref="file-upload">
                                         <label class="d-block mb-1">Documentation*</label>
@@ -5554,14 +5555,54 @@
     </status-toolbar> <!--coveo_no_index_end_90-->
 
     <script src="./js/eoi-form.js"></script>
-
+    <!-- temp debug stuff -->
+    <script>
+        $(document).ready(() => {
+            const wrappers = $('.sq-asset-builder-tab-content');
+            const wrappersMap = [...wrappers].reduce((prev, cur) => {
+                const type = cur.id.match(/type_([a-z_]+)$/)?.[1];
+                prev[type] = $(cur);
+                return prev;
+            }, {});
+            window.showAssetBuilderTab = (wrapperType) => {
+                $('[class^="sq-asset-builder-tab"]')
+                    .removeClass('sq-asset-builder-tab')
+                    .removeClass('sq-asset-builder-tab-active')
+                    .addClass('sq-asset-builder-tab');
+                $(`[class^="sq-asset-builder-tab"][id*="type_${wrapperType}"]`)
+                    .addClass('sq-asset-builder-tab-active')
+                wrappers.hide();
+                wrappersMap[wrapperType].attr('style', null);
+            }
+        })
+    </script>
     <style type="text/css">
+        input,
+        select {
+            &.--error {
+                border: 1px solid red;
+                /* use theme red*/
+            }
+        }
+
         .sq-asset-builder-tab-content {
             width: 50%;
             float: left;
             display: block !important;
             overflow: auto;
-            outline: 1px solid #000;
+            position: relative;
+
+            &[style]::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 200%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.03);
+                z-index: 999;
+                pointer-events: none;
+            }
         }
     </style>
 </body>

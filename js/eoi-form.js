@@ -1,7 +1,6 @@
 const SELECTORS = {
   wrappers: '.sq-asset-builder-tab-content',
   date: {
-    all: '[id^="metadata_field_date_445509"]',
     year: '[id^="metadata_field_date_445509"][id$="_datetimevalue_y"]',
     month: '[id^="metadata_field_date_445509"][id$="_datetimevalue_m"]',
     day: '[id^="metadata_field_date_445509"][id$="_datetimevalue_d"]',
@@ -23,6 +22,26 @@ const SELECTORS = {
   }
 };
 
+const ERRORS = {
+  rtfid: 'Jobs NT id is required and must be a 6 digit number',
+  file: 'A Word document job description must be attached.',
+  position: 'Position title is required.',
+  designation: 'Please select at least one designation.',
+  date: `The selected close date is less than 3 business days from today. 
+        An EOI must be advertised for at least 3 business days.`,
+  duration: 'Vacancy duration is required.',
+  agency: 'Please select at an agency.',
+  location: 'Please select at least one location.'
+};
+
+const ADVERTISE_STATE_MESSAGES = {
+  centralOnly: `The selected agency does not have a dedicated intranet listing. 
+             This EOI will be published on NTG Central only.`,
+  centralAndAgency: `The EOI will be advertised on the agency intranet and NTG Central
+             Untick NTG Central to advertise only on the agency intranet.`,
+  agencyOnly: 'The EOI will be advertised on the agency intranet'
+};
+
 (function ($) {
 
   $('body').ready(enhanceForm);
@@ -39,13 +58,16 @@ const SELECTORS = {
 
     const wrappers = $(SELECTORS.wrappers);
     let activeWrapper = [...wrappers].find(w => w.style.display !== 'none');
+    let assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
     const observer = new MutationObserver((mutations) => {
       const newActive = mutations.filter((mutation) => (
         mutation.type === 'attributes' &&
+        mutation.attributeName === 'style' &&
         mutation.target.style.display !== 'none'
       ))?.[0]?.target;
-      if (newActive && newACtive !== activeWrapper) {
+      if (newActive && newActive !== activeWrapper) {
         activeWrapper = newActive;
+        assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
       }
     });
     for (const wrapper of wrappers) {
@@ -63,7 +85,7 @@ const SELECTORS = {
       submitButton.classList.remove('ntgc-file-upload');
       submitButton.textContent = 'Submit';
       // Disable immediately — updateSubmitButton() will re-enable when valid
-      submitButton.disabled = true;
+      // submitButton.disabled = true;
       inputBtn.parentNode.replaceChild(submitButton, inputBtn);
       submitButtons = submitButtons.add(submitButton);
     }
@@ -102,7 +124,7 @@ const SELECTORS = {
       `${SELECTORS.date.hour} [value="23"]`,
       `${SELECTORS.date.min} [value="59"]`,
     ].join(',')).prop('selected', true);
-    $(`${SELECTORS.date.all} option[value="--"]`).remove();
+    $('.sq-metadata-date-wrapper option[value="--"]').remove();
     syncFields(Object.values(SELECTORS.date));
 
     /**
@@ -123,7 +145,7 @@ const SELECTORS = {
     });
     
     // Manually sync link {name, url} based on position and rtfid values
-    const linkName = $(SELECTORS.link.name);
+    const linkName = $(SELECTORS.link.name).attr('required', null);
     const linkUrl = $(SELECTORS.link.url);
     $('body').on('input', SELECTORS.position, (event) => {
       linkName.val(event.target.value);
@@ -137,54 +159,36 @@ const SELECTORS = {
       linkUrl.val(url);
     });
 
-    /**
-     * SYNC VALUES BETWEEN IDENTICAL FIELDS
+    /** TODO
+     * Pre fill duration
      */
-    let lastSyncMatch;
-    $('body').on('change input', (event) => {
-      const { target } = event;
-      if (!$(target).parents(`[id="${activeWrapper.id}"]`).length) {
-        console.log('skip sync');
-        return;
-      }
-      console.log('DEBUG sync', lastSyncMatch, target);
-      let registered, matchedSelector;
-      for (const selector of syncRegistry) {
-        registered = $(target.closest(selector));
-        if (registered[0] === target) {
-          matchedSelector = selector;
-          break;
-        }
-      }
+    // on change of closing dat if duration empty
+    // on blur of duration if empty
 
-      if (!matchedSelector) return;
-      if (matchedSelector === lastSyncMatch) {
-        console.log('DEBUG dont');
-        return;
-      }
-      lastSyncMatch = matchedSelector;
-      
-      if (registered.is('select, input:not([type="checkbox"])')) {
-        const others = $(matchedSelector).not(registered);
-        others.val(registered.val());
-      } else if (registered.is('[type="checkbox')) {
-        const others = $(`${matchedSelector}[value="${registered.val()}"]`).not(registered);
-        others.prop('checked', registered.is(':checked'));
-      }
-    });
+
 
     let validationTimer;
-    $('form[id^="page_asset_builder"]').on('change input', (event) => {
+    $('form[id^="page_asset_builder"]')
+    .on('change submit', (event) => {
+      if (event.type === 'submit') event.preventDefault();
       clearTimeout(validationTimer);
       validationTimer = setTimeout(() => validate(event), 500);
-    });
+    })
+    .attr('onsubmit', null);
 
-    function validate(event) {
-      console.log('DEBUG validate');
-      const { target } = event;
+    function validate(event = {}) {
+      let { target, type: eventType } = event;
+      if (eventType === 'submit') {
+        // for form submit just act like theres no target
+        // which will run all
+        target = null;
+      }
+      if (target && !$(target).parents(`[id="${activeWrapper.id}"]`).length) {
+        // skip events triggered by syncing other wrapper fields
+        return;
+      }
+      
       const errors = [];
-      const activeTabId = $('.sq-asset-builder-tab-active').attr('id');
-      const assetType = activeTabId.match(/type_([a-z_]+)_tab/)?.[1];
       
       /**
        * The asset type requirements
@@ -196,72 +200,191 @@ const SELECTORS = {
              * Note: the asset name and url is set in the hidden fields
              */
             const rtfid =  $(SELECTORS.rtfid);
-            if (!target || [...rtfid].includes(target)) {
-              const val = rtfid.val();
-              rtfid.removeClass('error');
-              if (!val || val.length !== 6 || isNaN(val))  {
-                rtfid.addClass('error');
-                errors.push(
-                  'Jobs NT id must be a 6 digit number'
-                );
+            const val = rtfid.val();
+            rtfid.removeClass('--error');
+            if (!val || val.length !== 6 || isNaN(val))  {
+              if (!target || rtfid[0] === target) {
+                rtfid.addClass('--error');
+                inlineError(rtfid[0], ERRORS.rtfid);
               }
+              errors.push(ERRORS.rtfid);
             }
           }
           break;
         case 'word_doc':
           {
             const file = $(SELECTORS.file);
-            if (!target || [...file].includes(target)) {
-              file.removeClass('ntgc-file--error');
-              if (!file?.[0]?.files?.length) {
-                file.addClass('ntgc-file--error');
-                errors.push('file required');
+            file.removeClass('--error');
+            if (!file?.[0]?.files?.length) {
+              if (!target || file[0] === target) {
+                file.addClass('--error');
               }
+              errors.push('file required');
             }
           }
           break;
       }
-
+      
       /**
        * Position
        */
-      const position = $(SELECTORS.position);
-      
-      if (!target || [...position].includes(target)) {
-        position.removeClass('error');
-        if (!position.val().trim()) {
-          position.addClass('error');
-          errors.push('position required');
+      const position = $(SELECTORS.position, activeWrapper);
+      const positionS = $(SELECTORS.position);
+
+      positionS.removeClass('--error');
+      if (!position.val().trim()) {
+        if (!target || position[0] === target) {
+          positionS.addClass('--error'); 
+          inlineError(position[0], ERRORS.position);
         }
+        errors.push(ERRORS.position);
       }
+      
 
       /**
        * Designation
        */
-      const designation = $(SELECTORS.designation);
-      if (!target || [...designation].includes(target)) {
-        designation.removeClass('error');
-        if (!designation.length) {
-          designation.addClass('error');
-          errors.push('designation required');
+      const designation = $(SELECTORS.designation, activeWrapper);
+      const designationS = $(SELECTORS.designation);
+      
+      designationS.removeClass('--error');
+      if (!designation.val().length) {
+        if (!target || designation[0] === target) {
+          designationS.addClass('--error');
         }
+        errors.push('Designations');
       }
 
       /**
        * Closing date
        */
       if (!target || target.closest('.sq-metadata-date-wrapper')) {
-        const day = $(SELECTORS.date.day);
-        const month = $(SELECTORS.date.month);
-        const year = $(SELECTORS.date.year);
+        const day = $(SELECTORS.date.day, activeWrapper);
+        const month = $(SELECTORS.date.month, activeWrapper);
+        const year = $(SELECTORS.date.year, activeWrapper);
         const selectedDate = new Date(day.val(), month.val() + 1, year.val());
         const today = new Date();
         today.setHours(0,0,0,0);
-        const all = $('.sq-metadata-date-wrapper select').removeClass('ngtc-date--error');
+        const all = $('.sq-metadata-date-wrapper select')
+              .removeClass('--error');
+        console.log(
+          'closing date',
+          selectedDate,
+          isNaN(selectedDate),
+          countWorkingDays(today, selectedDate)
+        );
         if (isNaN(selectedDate) || countWorkingDays(today, selectedDate) < 3) {
-          
-          all.addClass('ntgc-date--error');
+          all.addClass('--error');
           errors.push('closing date required');
+        }
+      }
+
+      /**
+       * Duration
+       */
+      const duration = $(SELECTORS.duration, activeWrapper);
+      const durationS = $(SELECTORS.duration);
+      
+      durationS.removeClass('--error');
+      if (!duration.val().trim()) {
+        if (!target || duration[0] === target) {
+          durationS.addClass('--error');
+        }
+        errors.push('duration required');
+      }
+
+      /**
+       * Agency
+       */
+      const agency = $(SELECTORS.agency, activeWrapper);
+      const agencyS = $(SELECTORS.agency);
+      
+      agencyS.removeClass('--error');
+      if (!agency.val().trim()) {
+        if (!target || agency[0] === target) {
+          agencyS.addClass('--error');
+        }
+        errors.push('agency required');
+      }
+
+      /**
+       * Location
+       */
+      const location = $(SELECTORS.location, activeWrapper);
+      const locationS = $(SELECTORS.location);
+      
+      locationS.removeClass('--error');
+      if (!location.val().length) {
+        if (!target || location[0] === target) {
+          locationS.addClass('--error');
+        }
+        errors.push('location required');
+      }
+
+      /**
+       * Advertise
+       * This logic is weirder than the rest.
+       * 
+       * - Get the visible advertise from activeWrapper
+       * - Get uncheched from those visible
+       * - Get all from all wrappers to remove any error
+       * - If visible - unchecked is 0
+       *   - if target in visible
+       *     - set error class on unchecked of all wrappers
+       *   - add error
+       * 
+       * UPDATE:
+       * Rather than having error we simply check ntg if none checked
+       * TODO: lift this out of validatino completely and just have enhancement live
+       */
+      const advertise = $(SELECTORS.advertise + ':visible', activeWrapper);
+      const advertiseUnchecked = advertise.not(':checked');
+      const advertiseS = $(SELECTORS.advertise);
+      // advertiseS.removeClass('--error'); // remove from all
+      if (!(advertise.length - advertiseUnchecked.length)) {
+        if (!target || [...advertise].includes(target)) {
+          const uncheckedSelector = [...advertiseUnchecked]
+            .map(i => `${SELECTORS.advertise}[value="${i.value}"]`);
+          /**
+           * No idea why but when we run the selector directly
+           * jquery was only finding one at this time...
+           * very odd, so using querySelectorAll to get them.
+           */
+          // $(document.querySelectorAll(uncheckedSelector)).addClass('--error');
+          
+          // UPDATE: just check ntg again
+          $(`${SELECTORS.advertise}[value="WoG"]`).prop('checked', true)
+        }
+        // errors.push('advertise required');
+      }
+
+
+      /**
+       * Submit buttons state
+       */
+      submitButtons.prop('disabled', errors.length);
+
+      /**
+       * sync fields to the other wrapper(s)
+       */
+      if (target) {
+        let registered, matchedSelector;
+        for (const selector of syncRegistry) {
+          registered = $(target.closest(selector));
+          if (registered[0] === target) {
+            matchedSelector = selector;
+            break;
+          }
+        }
+
+        if (matchedSelector) {
+          if (registered.is('select, input:not([type="checkbox"])')) {
+            const others = $(matchedSelector).not(registered).eq(0);
+            others.val(registered.val());
+          } else if (registered.is('[type="checkbox')) {
+            const others = $(`${matchedSelector}[value="${registered.val()}"]`).not(registered);
+            others.prop('checked', registered.is(':checked'));
+          }
         }
       }
 
@@ -269,10 +392,34 @@ const SELECTORS = {
        * Display errors?
        */
       if (errors.length) {
-        // console.error('TODO', errors);
+        console.error(errors);
+      } else {
+        console.log('valid');
+        if (eventType === 'submit') form_on_submit();
       }
+    }
 
-      submitButtons.prop('disabled', errors.length);
+    const inlineErrors = new Map();
+    function inlineError(rawField, msg) {
+      const containerChild = rawField.closest('.container > *');
+      let displays = inlineErrors.get(containerChild);
+      if (!displays) {
+        const idParts = rawField.id.split(assetType);
+        const selector = `[id^="${idParts.join('"][id$="')}"]`;
+        const other = $(selector).not(rawField);
+        // if (other.length) {
+        //   other.closest('.container > *').append(other);
+        // }
+        containerChild.append(rawField);
+        other.closest('.container > *').append(other);
+        displays = $([rawField, ...other]);
+        inlineErrors.set(containerChild, displays);
+      }
+      if (typeof msg === 'string') {
+        displays.html(msg).show();
+      } else {
+        displays.hide();
+      }
     }
   }
 
