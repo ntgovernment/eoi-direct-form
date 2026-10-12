@@ -3443,6 +3443,7 @@
                                                 class="sq-form-field ntgc-text-input ntgc-text-input--block"
                                                 id="link_0_207">
                                         </div>
+                                        <div class="inline-error"></div>
                                     </div>
 
 
@@ -3451,6 +3452,7 @@
                                         <input type="text" name="metadata_field_text_445504_link_value" size="30"
                                             class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
                                             id="metadata_field_text_445504_link_value">
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4">
@@ -3564,7 +3566,7 @@
                                         </select>
                                         <div id="designation-warning" style="display: none;">Please select at least one
                                             designation.</div>
-
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="news--type mb-1">
@@ -3780,6 +3782,7 @@
                                             be advertised for at least 3
                                             business days.
                                         </div>
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4 news--type">
@@ -3850,6 +3853,7 @@
                                             <option value="PWC">PowerWater</option>
                                             <option value="TGEN">Territory Generation</option>
                                         </select>
+                                        <div class="inline-error"></div>
                                     </div>
 
 
@@ -3886,7 +3890,7 @@
                                         </select>
                                         <div id="location-warning" style="display: none;">Please select at least one
                                             location.</div>
-
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div id="news--advertise" class="mb-2 news--type">
@@ -4137,6 +4141,7 @@
                                         <div id="agency-advertise-warning" style="display: none;">The selected agency
                                             does not have a dedicated intranet listing. This EOI will be published on
                                             NTG Central only.</div>
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="d-none">
@@ -4148,6 +4153,7 @@
                                             size="30"
                                             class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
                                             id="metadata_field_text_691086_link_value">
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4">
@@ -4186,6 +4192,7 @@
                                             </table>
 
                                         </div>
+                                        <div class="inline-error"></div>
                                     </div>
 
 
@@ -4305,6 +4312,7 @@
 
                                         <div id="documentation-warning" style="display: none;">A Word document job
                                             description must be attached.</div>
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4">
@@ -4312,6 +4320,7 @@
                                         <input type="text" name="metadata_field_text_445504_word_doc_value" size="30"
                                             class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
                                             id="metadata_field_text_445504_word_doc_value">
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4">
@@ -4426,7 +4435,7 @@
                                         </select>
                                         <div id="designation-warning" style="display: none;">Please select at least one
                                             designation.</div>
-
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="news--type mb-1">
@@ -4642,6 +4651,7 @@
                                             be advertised for at least 3
                                             business days.
                                         </div>
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4 news--type">
@@ -4655,6 +4665,7 @@
                                         <input type="text" name="metadata_field_text_445506_word_doc_value" size="30"
                                             class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
                                             id="metadata_field_text_445506_word_doc_value">
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="mb-4 news--type">
@@ -4713,6 +4724,7 @@
                                             <option value="PWC">PowerWater</option>
                                             <option value="TGEN">Territory Generation</option>
                                         </select>
+                                        <div class="inline-error"></div>
                                     </div>
 
 
@@ -4750,7 +4762,7 @@
                                         </select>
                                         <div id="location-warning" style="display: none;">Please select at least one
                                             location.</div>
-
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div id="news--advertise" class="mb-2 news--type">
@@ -5001,6 +5013,7 @@
                                         <div id="agency-advertise-warning" style="display: none;">The selected agency
                                             does not have a dedicated intranet listing. This EOI will be published on
                                             NTG Central only.</div>
+                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="d-none">
@@ -5580,9 +5593,19 @@
         input,
         select {
             &.--error {
-                border: 1px solid red;
-                /* use theme red*/
+                border: 1px solid a60f37;
             }
+        }
+
+        .inline-error {
+            display: none;
+            width: 100%;
+            color: var(--clr-status-danger, #a60f37);
+            font-size: 14px;
+            font-family: Roboto, sans-serif;
+            font-weight: 400;
+            line-height: 20px;
+            word-wrap: break-word;
         }
 
         .sq-asset-builder-tab-content {

@@ -1,6 +1,6 @@
 const SELECTORS = {
   wrappers: '.sq-asset-builder-tab-content',
-  date: {
+  closingDate: {
     year: '[id^="metadata_field_date_445509"][id$="_datetimevalue_y"]',
     month: '[id^="metadata_field_date_445509"][id$="_datetimevalue_m"]',
     day: '[id^="metadata_field_date_445509"][id$="_datetimevalue_d"]',
@@ -27,7 +27,7 @@ const ERRORS = {
   file: 'A Word document job description must be attached.',
   position: 'Position title is required.',
   designation: 'Please select at least one designation.',
-  date: `The selected close date is less than 3 business days from today. 
+  closingDate: `The selected close date is less than 3 business days from today. 
         An EOI must be advertised for at least 3 business days.`,
   duration: 'Vacancy duration is required.',
   agency: 'Please select at an agency.',
@@ -118,14 +118,14 @@ const ADVERTISE_STATE_MESSAGES = {
     // the complex selectors will find for both contexts
     // ie [wrapers.length] times duplicates and set them
     $([
-      `${SELECTORS.date.day} [value="${ closeDate.getDate() }"]`,
-      `${SELECTORS.date.month} [value="${ closeDate.getMonth() + 1 }"]`,
-      `${SELECTORS.date.year} [value="${ closeDate.getFullYear() }"]`,
-      `${SELECTORS.date.hour} [value="23"]`,
-      `${SELECTORS.date.min} [value="59"]`,
+      `${SELECTORS.closingDate.day} [value="${ closeDate.getDate() }"]`,
+      `${SELECTORS.closingDate.month} [value="${ closeDate.getMonth() + 1 }"]`,
+      `${SELECTORS.closingDate.year} [value="${ closeDate.getFullYear() }"]`,
+      `${SELECTORS.closingDate.hour} [value="23"]`,
+      `${SELECTORS.closingDate.min} [value="59"]`,
     ].join(',')).prop('selected', true);
     $('.sq-metadata-date-wrapper option[value="--"]').remove();
-    syncFields(Object.values(SELECTORS.date));
+    syncFields(Object.values(SELECTORS.closingDate));
 
     /**
      * Advertise rows visibility and syncing
@@ -169,7 +169,8 @@ const ADVERTISE_STATE_MESSAGES = {
 
     let validationTimer;
     $('form[id^="page_asset_builder"]')
-    .on('change submit', (event) => {
+    .on('change input submit', (event) => {
+      console.log(event.type);
       if (event.type === 'submit') event.preventDefault();
       clearTimeout(validationTimer);
       validationTimer = setTimeout(() => validate(event), 500);
@@ -202,6 +203,7 @@ const ADVERTISE_STATE_MESSAGES = {
             const rtfid =  $(SELECTORS.rtfid);
             const val = rtfid.val();
             rtfid.removeClass('--error');
+            inlineError(rtfid[0], '');
             if (!val || val.length !== 6 || isNaN(val))  {
               if (!target || rtfid[0] === target) {
                 rtfid.addClass('--error');
@@ -215,9 +217,11 @@ const ADVERTISE_STATE_MESSAGES = {
           {
             const file = $(SELECTORS.file);
             file.removeClass('--error');
+            inlineError(file[0], '');
             if (!file?.[0]?.files?.length) {
               if (!target || file[0] === target) {
                 file.addClass('--error');
+                inlineError(file[0], ERRORS.file);
               }
               errors.push('file required');
             }
@@ -232,6 +236,7 @@ const ADVERTISE_STATE_MESSAGES = {
       const positionS = $(SELECTORS.position);
 
       positionS.removeClass('--error');
+      inlineError(position[0], '');
       if (!position.val().trim()) {
         if (!target || position[0] === target) {
           positionS.addClass('--error'); 
@@ -248,9 +253,11 @@ const ADVERTISE_STATE_MESSAGES = {
       const designationS = $(SELECTORS.designation);
       
       designationS.removeClass('--error');
+      inlineError(designation[0], '');
       if (!designation.val().length) {
         if (!target || designation[0] === target) {
           designationS.addClass('--error');
+          inlineError(designation[0], ERRORS.designation);
         }
         errors.push('Designations');
       }
@@ -258,23 +265,22 @@ const ADVERTISE_STATE_MESSAGES = {
       /**
        * Closing date
        */
+      const day = $(SELECTORS.closingDate.day, activeWrapper);
+      const all = $('.sq-metadata-date-wrapper select').removeClass('--error');
+      inlineError(day[0], '');
       if (!target || target.closest('.sq-metadata-date-wrapper')) {
-        const day = $(SELECTORS.date.day, activeWrapper);
-        const month = $(SELECTORS.date.month, activeWrapper);
-        const year = $(SELECTORS.date.year, activeWrapper);
-        const selectedDate = new Date(day.val(), month.val() + 1, year.val());
+        const month = $(SELECTORS.closingDate.month, activeWrapper);
+        const year = $(SELECTORS.closingDate.year, activeWrapper);
+        const selectedDate = new Date(
+          parseInt(year.val()), 
+          parseInt(month.val()) - 1,
+          parseInt(day.val())
+        );
         const today = new Date();
         today.setHours(0,0,0,0);
-        const all = $('.sq-metadata-date-wrapper select')
-              .removeClass('--error');
-        console.log(
-          'closing date',
-          selectedDate,
-          isNaN(selectedDate),
-          countWorkingDays(today, selectedDate)
-        );
         if (isNaN(selectedDate) || countWorkingDays(today, selectedDate) < 3) {
           all.addClass('--error');
+          inlineError(day[0], ERRORS.closingDate);
           errors.push('closing date required');
         }
       }
@@ -402,20 +408,25 @@ const ADVERTISE_STATE_MESSAGES = {
     const inlineErrors = new Map();
     function inlineError(rawField, msg) {
       const containerChild = rawField.closest('.container > *');
+     
       let displays = inlineErrors.get(containerChild);
+      
       if (!displays) {
+        displays = $('.inline-error', containerChild);
         const idParts = rawField.id.split(assetType);
         const selector = `[id^="${idParts.join('"][id$="')}"]`;
         const other = $(selector).not(rawField);
-        // if (other.length) {
-        //   other.closest('.container > *').append(other);
-        // }
-        containerChild.append(rawField);
-        other.closest('.container > *').append(other);
-        displays = $([rawField, ...other]);
+        let otherContainerChild;
+        if (other.length) {
+          otherContainerChild = other.closest('.container > *');
+          displays = displays.add($('.inline-error', otherContainerChild));
+        }
         inlineErrors.set(containerChild, displays);
+        if (otherContainerChild) inlineErrors.set(otherContainerChild, displays);
       }
-      if (typeof msg === 'string') {
+      
+      console.log({msg, displays});
+      if (msg) {
         displays.html(msg).show();
       } else {
         displays.hide();
