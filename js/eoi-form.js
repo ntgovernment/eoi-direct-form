@@ -122,7 +122,7 @@ const ADVERTISE_STATE_MESSAGES = {
       `${SELECTORS.closingDate.month} [value="${ closeDate.getMonth() + 1 }"]`,
       `${SELECTORS.closingDate.year} [value="${ closeDate.getFullYear() }"]`,
       `${SELECTORS.closingDate.hour} [value="23"]`,
-      `${SELECTORS.closingDate.min} [value="59"]`,
+      `${SELECTORS.closingDate.min} [value="45"]`,
     ].join(',')).prop('selected', true);
     $('.sq-metadata-date-wrapper option[value="--"]').remove();
     syncFields(Object.values(SELECTORS.closingDate));
@@ -276,9 +276,11 @@ const ADVERTISE_STATE_MESSAGES = {
           parseInt(month.val()) - 1,
           parseInt(day.val())
         );
+        selectedDate.setHours(23,45,0,0);
+
         const today = new Date();
-        today.setHours(0,0,0,0);
-        if (isNaN(selectedDate) || countWorkingDays(today, selectedDate) < 3) {
+        const dayOffset = today.getHours() > 11 ? 3 : 2;
+        if (isNaN(selectedDate) || countWorkingDays(today, selectedDate) < dayOffset) {
           all.addClass('--error');
           inlineError(day[0], ERRORS.closingDate);
           errors.push('closing date required');
