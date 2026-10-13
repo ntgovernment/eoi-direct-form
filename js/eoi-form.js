@@ -401,14 +401,15 @@ $(document).ready(function () {
     }
 
     var selectedDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    selectedDate.setHours(23, 45, 0, 0);
     var today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const dayOffset = today.getHours() > 11 ? 4 : 3;
 
     var dateSelects = $(
       "#metadata_field_date_445509_datetimevalue_d, #metadata_field_date_445509_datetimevalue_m, #metadata_field_date_445509_datetimevalue_y",
     );
 
-    if (countWorkingDays(today, selectedDate) < 3) {
+    if (countWorkingDays(today, selectedDate) < dayOffset) {
       warning.show();
       dateSelects.addClass("ntgc-date--error");
     } else {
