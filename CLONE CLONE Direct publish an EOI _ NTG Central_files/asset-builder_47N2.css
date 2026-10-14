@@ -1,0 +1,30 @@
+/*
+####################################################################################################################
+ asset builder asset for use on the frontend and in IEM
+####################################################################################################################
+*/
+
+/* Very basic WYSIWYG styles just so that something is visible and viper fires */
+.with-viper {
+    /* This min-height is needed wherever viper is meant to be initialized
+	so that it has a height and is therefore able to be focused into,
+	which is what fires viper */
+    min-height: 2.25em;
+    padding: 10px;
+
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.with-viper > p:only-child {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Make sure the WYSIWYGs styling only applies to Asset builders and not IEM */
+.matrix-inline-editing-area .with-viper {
+    padding: 0;
+
+    border: 0;
+    border-radius: 0;
+}
