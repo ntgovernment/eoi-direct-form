@@ -114,7 +114,7 @@ This file is the **Content** of the Squiz Matrix asset builder page. It defines 
 |----|-------------|-------------------|
 | `#designation-warning` | `%metadata-F_445634%` | No designation selected |
 | `#location-warning` | `%metadata-F_445518%` | No location selected |
-| `#agency-advertise-warning` | `#advertise-selection` | Selected agency has no matching advertise checkbox row |
+| `#agency-advertise-warning` | `#advertise-selection` | Selected agency has no matching advertise checkbox row (informational — NTG Central fallback still allows submission) |
 | `#documentation-warning` | `%details-S_details%` | No file attached |
 
 > `#date-close-warning` is already present in `html/eoi-form.html` and does not need to be added.
@@ -192,7 +192,7 @@ When `#metadata_field_select_445640` (Agency) changes:
 1. All non-NTG-Central site rows in `#advertise-selection table tr` are hidden.
 2. All agency-specific checkboxes are unchecked.
 3. The row matching `#metadata_field_select_446182_{AGENCY_CODE}` is shown and its checkbox pre-checked.
-4. If no matching agency row exists, the NTG Central checkbox (`_WoG`) is checked instead.
+4. If no matching agency row exists, the NTG Central checkbox (`_WoG`) is checked instead, and `#agency-advertise-warning` is shown (informational only — `updateSubmitButton()` gates on whether any checkbox ends up checked, not on the dedicated row existing).
 
 #### Close date warning
 
@@ -205,7 +205,7 @@ When `#metadata_field_select_445640` (Agency) changes:
 | `addWorkingDays(date, days)`   | Global   | Returns a new `Date` incremented by `days` working days (Mon–Fri).              |
 | `countWorkingDays(start, end)` | Closured | Returns the integer count of working days between two `Date` objects.           |
 | `checkCloseDateWarning()`      | Closured | Reads the three close date `<select>` elements and updates the warning display. |
-| `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. Call this after any programmatic field change. |
+| `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. Gates on Agency by "is a value selected and at least one advertise checkbox checked", not on a dedicated advertise row existing for that agency. Call this after any programmatic field change. |
 
 > `addWorkingDays` is declared at module scope (not inside `$(document).ready`) because it may be called by other scripts on the Matrix page.
 
