@@ -39,6 +39,53 @@
 
 /* EOI Direct Form styles */
 
+#sq-asset-builder-header {
+    ul {
+        display: flex;
+        margin: 0 0 1rem -.5rem;
+        border-bottom: 4px solid #d3dfe0;
+        li {
+            list-style-type: none;
+            padding: 0;
+            &::before {
+                display:none;
+            }
+            &:not(:last-child) {
+                padding-right: 2.5rem;
+            }
+           
+        }
+        a {
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 1.5rem 0 1.5rem 0;
+            margin-bottom: -4px;
+            display: block;
+            position: relative;
+            transition: border 300ms ease;
+            &::after {
+              position: absolute;
+              content: "";
+              bottom: 0;
+              left: 0;
+              right: 0;
+              height: 5px;
+              background: none;
+            }
+        }
+        .sq-asset-builder-tab-active a {
+            color: #208820;
+            &:after {
+                border-bottom: 4px solid #20a030;
+            }
+        }
+        #page_asset_builder_1002518_type_link_tab a::before {
+            content: "Jobs NT ";
+        }
+    }
+}
+
 .sq-limbo-section-heading {
   display: none;
 }
