@@ -29,9 +29,9 @@
  *        - Submission is handed to the CMS via submit_form(form, true), with a
  *          plain form.submit() fallback if the CMS function is unavailable.
  *
- *   4. Close date pre-population — defaults to today + 3 calendar days (Mon/
- *      Tue) or today + 5 calendar days (Wed–Sun) to guarantee a minimum of
- *      3 business days. Time is set to 23:45 (hidden in the UI via CSS).
+ *   4. Close date pre-population — defaults to 2 working days after today
+ *      when the page is opened before 12pm, otherwise 3 working days after
+ *      today. Time is set to 23:45 (hidden in the UI via CSS).
  *
  *   5. Advertise filter — hides all rows in the "Where do you want to
  *      advertise?" table on load except NTG Central. When an agency is
@@ -198,6 +198,46 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
 
+      const closeDateDay = document.getElementById(
+        "metadata_field_date_445509_datetimevalue_d",
+      )?.value;
+      const closeDateMonth = document.getElementById(
+        "metadata_field_date_445509_datetimevalue_m",
+      )?.value;
+      const closeDateYear = document.getElementById(
+        "metadata_field_date_445509_datetimevalue_y",
+      )?.value;
+      const closeDateSelects = $(
+        "#metadata_field_date_445509_datetimevalue_d, #metadata_field_date_445509_datetimevalue_m, #metadata_field_date_445509_datetimevalue_y",
+      );
+
+      if (
+        !closeDateDay ||
+        closeDateDay === "--" ||
+        !closeDateMonth ||
+        closeDateMonth === "--" ||
+        !closeDateYear ||
+        closeDateYear === "--"
+      ) {
+        allFilled = false;
+        closeDateSelects.addClass("ntgc-date--error");
+      } else {
+        const selectedCloseDate = new Date(
+          parseInt(closeDateYear),
+          parseInt(closeDateMonth) - 1,
+          parseInt(closeDateDay),
+        );
+
+        if (!isCloseDateValid(selectedCloseDate, new Date())) {
+          allFilled = false;
+          $("#date-close-warning").show();
+          closeDateSelects.addClass("ntgc-date--error");
+        } else {
+          $("#date-close-warning").hide();
+          closeDateSelects.removeClass("ntgc-date--error");
+        }
+      }
+
       console.log(`All fields filled: ${allFilled}`);
 
       if (!allFilled) {
@@ -252,6 +292,52 @@ function addWorkingDays(date, days) {
   return result;
 }
 
+/**
+ * Before noon the close date may be 2 working days ahead; from noon onward it
+ * must be 3 working days ahead.
+ *
+ * @param {Date} date
+ * @returns {number}
+ */
+function getMinimumCloseDateWorkingDays(date) {
+  return date.getHours() < 12 ? 2 : 3;
+}
+
+/**
+ * Counts Mon–Fri days from `start` (exclusive) to `end` (inclusive).
+ * Does not account for public holidays.
+ *
+ * @param {Date} start
+ * @param {Date} end
+ * @returns {number}
+ */
+function countWorkingDays(start, end) {
+  let count = 0;
+  let current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  let target = new Date(end);
+  target.setHours(0, 0, 0, 0);
+  while (current < target) {
+    current.setDate(current.getDate() + 1);
+    if (current.getDay() !== 0 && current.getDay() !== 6) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * @param {Date} selectedDate
+ * @param {Date} now
+ * @returns {boolean}
+ */
+function isCloseDateValid(selectedDate, now) {
+  return (
+    countWorkingDays(now, selectedDate) >=
+    getMinimumCloseDateWorkingDays(now)
+  );
+}
+
 // ---------------------------------------------------------------------------
 // 3. jQuery ready — date pre-population, advertise filter, change listeners
 // ---------------------------------------------------------------------------
@@ -274,43 +360,31 @@ $(document).ready(function () {
   // -- Pre-populate close date ---------------------------------------------
   /**
    * Default close date rule:
-   *   - If today is Mon or Tue (getDay < 3): add 3 calendar days → lands Thu/Fri
-   *   - Otherwise: add 5 calendar days → skips the weekend
-   * This ensures the default is always at least 3 business days ahead.
+   *   - Before 12pm: today + 2 working days
+   *   - From 12pm onward: today + 3 working days
    * Hour is set to 23:45 (hidden from users via CSS) to expire at end of day.
    */
-  const today = new Date();
-  const closeDate = new Date(
-    today.setDate(today.getDate() + (today.getDay() < 3 ? 3 : 5)),
+  const now = new Date();
+  const closeDate = addWorkingDays(
+    now,
+    getMinimumCloseDateWorkingDays(now),
   );
 
-  // Collect month names from the existing <option> elements for reference
-  var monthNames = [];
-  $("#metadata_field_date_445509_datetimevalue_m option").each(function () {
-    monthNames.push($(this).html());
-  });
-
-  $(
-    "#metadata_field_date_445509_datetimevalue_d option:eq(" +
-      closeDate.getDate() +
-      ")",
-  ).prop("selected", true);
+  $("#metadata_field_date_445509_datetimevalue_d").val(
+    String(closeDate.getDate()),
+  );
   $("#metadata_field_date_445509_datetimevalue_m").val(
-    closeDate.getMonth() + 1,
+    String(closeDate.getMonth() + 1),
   );
-  $(
-    "#metadata_field_date_445509_datetimevalue_y option:eq(" +
-      closeDate.getFullYear() +
-      ")",
-  ).prop("selected", true);
+  $("#metadata_field_date_445509_datetimevalue_y").val(
+    String(closeDate.getFullYear()),
+  );
   // Time set to 23:45 — hidden via CSS but required by the CMS date field
-  $("#metadata_field_date_445509_datetimevalue_h option:eq(23)").prop(
-    "selected",
-    true,
+  $("#metadata_field_date_445509_datetimevalue_h").val(
+    String(23),
   );
-  $("#metadata_field_date_445509_datetimevalue_i option:eq(45)").prop(
-    "selected",
-    true,
+  $("#metadata_field_date_445509_datetimevalue_i").val(
+    String(45),
   );
 
   // Hide all advertise rows on load; the first row (NTG Central) stays visible
@@ -355,35 +429,11 @@ $(document).ready(function () {
     updateSubmitButton();
   });
 
-  // -- Utility: count working days between two dates -----------------------
-  /**
-   * Counts Mon–Fri days from `start` (exclusive) to `end` (inclusive).
-   * Does not account for public holidays.
-   *
-   * @param {Date} start
-   * @param {Date} end
-   * @returns {number}
-   */
-  function countWorkingDays(start, end) {
-    let count = 0;
-    let current = new Date(start);
-    current.setHours(0, 0, 0, 0);
-    let target = new Date(end);
-    target.setHours(0, 0, 0, 0);
-    while (current < target) {
-      current.setDate(current.getDate() + 1);
-      if (current.getDay() !== 0 && current.getDay() !== 6) {
-        count++;
-      }
-    }
-    return count;
-  }
-
   // -- Close date warning --------------------------------------------------
   /**
    * Shows #date-close-warning and applies .ntgc-date--error to the three
-   * date <select> elements when the selected close date is fewer than 3
-   * working days from today.
+   * date <select> elements when the selected close date does not meet the
+   * current working-day minimum.
    *
    * Called on change of any of the three date selects, and once on page load
    * after the default date is set.
@@ -401,15 +451,12 @@ $(document).ready(function () {
     }
 
     var selectedDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-    selectedDate.setHours(23, 45, 0, 0);
     var today = new Date();
-    const dayOffset = today.getHours() > 11 ? 4 : 3;
 
     var dateSelects = $(
       "#metadata_field_date_445509_datetimevalue_d, #metadata_field_date_445509_datetimevalue_m, #metadata_field_date_445509_datetimevalue_y",
     );
-
-    if (countWorkingDays(today, selectedDate) < dayOffset) {
+    if (!isCloseDateValid(selectedDate, today)) {
       warning.show();
       dateSelects.addClass("ntgc-date--error");
     } else {
@@ -469,7 +516,12 @@ $(document).ready(function () {
     var d = $("#metadata_field_date_445509_datetimevalue_d").val();
     var m = $("#metadata_field_date_445509_datetimevalue_m").val();
     var y = $("#metadata_field_date_445509_datetimevalue_y").val();
-    var dateOk = d && d !== "--" && m && m !== "--" && y && y !== "--";
+    var datePartsSelected = d && d !== "--" && m && m !== "--" && y && y !== "--";
+    var dateOk = false;
+    if (datePartsSelected) {
+      var selectedDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      dateOk = isCloseDateValid(selectedDate, new Date());
+    }
 
     // 4. Agency + advertise checkbox
     // agencyHasDedicatedRow is purely informational (drives the warning below);

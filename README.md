@@ -180,10 +180,10 @@ Agency checkbox IDs follow the pattern `metadata_field_select_446182_{CODE}` whe
 
 Calculates a default close date and pre-selects the five date/time `<select>` dropdowns (`_d`, `_m`, `_y`, `_h`, `_i`):
 
-- **Offset logic**: uses `today.getDay() < 3 ? 3 : 5` (calendar days, **not** working days):
-  - Sunday (0), Monday (1), Tuesday (2) → add **3** calendar days — result lands Thu/Fri, already 3+ business days ahead.
-  - Wednesday (3), Thursday (4), Friday (5), Saturday (6) → add **5** calendar days — skips the coming weekend to ensure the result is still 3+ business days ahead.
-- **Time**: always pre-set to 23:45 (`_h` option index 23, `_i` option index 45).
+- **Offset logic**: uses working days and the current time:
+  - Before 12pm → add **2** working days.
+  - From 12pm onward → add **3** working days.
+- **Time**: always pre-set to 23:45.
 
 #### Agency → advertise-site sync
 
@@ -196,7 +196,7 @@ When `#metadata_field_select_445640` (Agency) changes:
 
 #### Close date warning
 
-`checkCloseDateWarning()` reads the `_d`, `_m`, `_y` selects and computes working days to the selected date. If fewer than 3 working days remain, `#date-close-warning` is shown and `.ntgc-date--error` is added to the three date selects. The check runs on every date select change and once on page load (to cover pre-populated dates).
+`checkCloseDateWarning()` reads the `_d`, `_m`, `_y` selects and computes working days to the selected date. If the selected date is earlier than the current minimum of 2 working days before noon or 3 working days from noon onward, `#date-close-warning` is shown and `.ntgc-date--error` is added to the three date selects. The check runs on every date select change and once on page load (to cover pre-populated dates).
 
 ### Helper functions
 
@@ -204,8 +204,8 @@ When `#metadata_field_select_445640` (Agency) changes:
 | ------------------------------ | -------- | ------------------------------------------------------------------------------- |
 | `addWorkingDays(date, days)`   | Global   | Returns a new `Date` incremented by `days` working days (Mon–Fri).              |
 | `countWorkingDays(start, end)` | Closured | Returns the integer count of working days between two `Date` objects.           |
-| `checkCloseDateWarning()`      | Closured | Reads the three close date `<select>` elements and updates the warning display. |
-| `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. Gates on Agency by "is a value selected and at least one advertise checkbox checked", not on a dedicated advertise row existing for that agency. Call this after any programmatic field change. |
+| `checkCloseDateWarning()`      | Closured | Reads the three close date `<select>` elements and updates the warning display using the same time-based working-day rule as the prefill. |
+| `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. The close date must be present and satisfy the same before-noon/after-noon working-day rule used by the prefill. Gates on Agency by "is a value selected and at least one advertise checkbox checked", not on a dedicated advertise row existing for that agency. Call this after any programmatic field change. |
 
 > `addWorkingDays` is declared at module scope (not inside `$(document).ready`) because it may be called by other scripts on the Matrix page.
 

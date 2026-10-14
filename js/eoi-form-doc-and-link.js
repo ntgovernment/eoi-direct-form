@@ -112,8 +112,9 @@ const ADVERTISE_STATE_MESSAGES = {
      * Hour is set to 23:45 (hidden from users via CSS) to expire at end of day.
      */
     const today = new Date();
-    const closeDate = new Date(
-      today.setDate(today.getDate() + (today.getDay() < 3 ? 3 : 5)),
+    const closeDate = addWorkingDays(
+      today,
+      getMinimumCloseDateWorkingDays(today),
     );
     // the complex selectors will find for both contexts
     // ie [wrapers.length] times duplicates and set them
@@ -282,7 +283,7 @@ const ADVERTISE_STATE_MESSAGES = {
         'visibleClosingDate', // all the visible selects 
         day, // wwe only need one of them for this
         {
-          valid: !(isNaN(selectedDate) || countWorkingDays(today, selectedDate) < dayOffset),
+          valid: !isNaN(selectedDate) && isCloseDateValid(selectedDate, today),
           inline: !target || target.closest('.sq-metadata-date-wrapper')
         }
       )
@@ -434,50 +435,61 @@ const ADVERTISE_STATE_MESSAGES = {
     }
   }
 
-  function countWorkingDays(start, end) {
-    let count = 0;
-    let current = new Date(start);
-    current.setHours(0, 0, 0, 0);
-    let target = new Date(end);
-    target.setHours(0, 0, 0, 0);
-    while (current < target) {
-      current.setDate(current.getDate() + 1);
-      if (current.getDay() !== 0 && current.getDay() !== 6) {
-        count++;
-      }
+ /**
+ * @param {Date} date  - The start date.
+ * @param {number} days - Number of working days to add.
+ * @returns {Date} A new Date object `days` working days after `date`.
+ */
+function addWorkingDays(date, days) {
+  let result = new Date(date);
+  let count = 0;
+  while (count < days) {
+    result.setDate(result.getDate() + 1);
+    if (result.getDay() !== 0 && result.getDay() !== 6) {
+      count++;
     }
-    return count;
   }
+  return result;
+}
 
-  /**
-   * DEPRECATED
-   * `$('body').on('change', SELECTORS.advertise, validateCheckboxes);`
-   * this is redundant becaus ethe display logic enforces state
+function getMinimumCloseDateWorkingDays(date) {
+  return date.getHours() < 12 ? 2 : 3;
+}
 
-  const MSG_WOG_CHECKED_MAX_2 = 'You can only select NTG Central and one other advertise.';
-  const MSG_WOG_UNCHECKED_MAX_1 = 'You can only select one advertise.';
-  const MSG_NO_advertise_CHECKED = 'Please select NTG Central or one advertise.';
-
-  function validateCheckboxes(event) {
-      const { target } = event;
-      const parent = event.target.closest('#advertise-selection');
-      const checked = $(SELECTORS.advertise + ':checked', parent);
-      const wogChecked = checked.filter('[value="WoG"]').length;
-      const { length } = checked;
-      const msg = wogChecked && length > 2
-            ? MSG_WOG_CHECKED_MAX_2
-            : !wogChecked && length > 1
-            ? MSG_WOG_UNCHECKED_MAX_1
-            : MSG_NO_advertise_CHECKED;
-
-      if ([MSG_WOG_CHECKED_MAX_2, MSG_WOG_UNCHECKED_MAX_1].includes(msg)) {
-        $(target).prop('checked', false);
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-      console.log(msg);
+/**
+ * Counts Mon–Fri days from `start` (exclusive) to `end` (inclusive).
+ * Does not account for public holidays.
+ *
+ * @param {Date} start
+ * @param {Date} end
+ * @returns {number}
+ */
+function countWorkingDays(start, end) {
+  let count = 0;
+  let current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  let target = new Date(end);
+  target.setHours(0, 0, 0, 0);
+  while (current < target) {
+    current.setDate(current.getDate() + 1);
+    if (current.getDay() !== 0 && current.getDay() !== 6) {
+      count++;
+    }
   }
-      */
+  return count;
+}
+
+/**
+ * @param {Date} selectedDate
+ * @param {Date} now
+ * @returns {boolean}
+ */
+function isCloseDateValid(selectedDate, now) {
+  return (
+    countWorkingDays(now, selectedDate) >=
+    getMinimumCloseDateWorkingDays(now)
+  );
+}
 
   
 })(jQuery);
