@@ -24,12 +24,12 @@ const SELECTORS = {
 };
 
 const ERRORS = {
-  rtfid: 'Jobs NT id is required and must be a 6 digit number',
+  rtfid: 'Jobs NT id is required and must be a 6 digit number.',
   file: 'A Word document job description must be attached.',
   position: 'Position title is required.',
   designation: 'Please select at least one designation.',
   visibleClosingDate: `The selected close date is less than 3 business days from today. 
-        An EOI must be advertised for at least 3 business days.`,
+        <br>An EOI must be advertised for at least 3 business days.`,
   duration: 'Vacancy duration is required.',
   agency: 'Please select at an agency.',
   location: 'Please select at least one location.'
@@ -37,10 +37,11 @@ const ERRORS = {
 
 const ADVERTISE_STATE_MESSAGES = {
   centralOnly: `The selected agency does not have a dedicated intranet listing. 
-             This EOI will be published on NTG Central only.`,
+             <br>This EOI will be published on NTG Central only.`,
   centralAndAgency: `The EOI will be advertised on the agency intranet and NTG Central
-             Untick NTG Central to advertise only on the agency intranet.`,
-  agencyOnly: 'The EOI will be advertised on the agency intranet'
+             <br>Untick NTG Central to advertise only on the agency intranet.`,
+  centralOnlyAgencyAvailable: 'This EOI will be published on NTG Central only.',
+  agencyOnly: 'The EOI will be advertised on the agency intranet.'
 };
 
 (function ($) {
@@ -57,6 +58,8 @@ const ADVERTISE_STATE_MESSAGES = {
 
     serverErrorChecks();
 
+    let errors = []; // live errors
+    let validateHasEverRan;
     const wrappers = $(SELECTORS.wrappers);
     let activeWrapper = [...wrappers].find(w => w.style.display !== 'none');
     let assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
@@ -69,6 +72,8 @@ const ADVERTISE_STATE_MESSAGES = {
       if (newActive && newActive !== activeWrapper) {
         activeWrapper = newActive;
         assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
+        // revalidate when switching tabs
+        if (validateHasEverRan) validate();
       }
     });
     for (const wrapper of wrappers) {
@@ -149,7 +154,7 @@ const ADVERTISE_STATE_MESSAGES = {
           tipKey = 'centralOnly';
           break;
         case 1:
-          tipKey = advertiseUnchecked.is('[value="WoG"]') ? 'agencyOnly' : 'centralOnly'
+          tipKey = advertiseUnchecked.is('[value="WoG"]') ? 'agencyOnly' : 'centralOnlyAgencyAvailable'
           break
         case 2:
           tipKey = 'centralAndAgency';
@@ -193,14 +198,12 @@ const ADVERTISE_STATE_MESSAGES = {
 
 
     let validationTimer;
-    let errors = [];
 
     $('form[id^="page_asset_builder"]')
-    .on('change input submit', (event) => {
-      console.log(event.type);
-      if (event.type === 'submit') event.preventDefault();
+    .on('change input', (event) => {
+      const {type} = event;
       clearTimeout(validationTimer);
-      validationTimer = setTimeout(() => validate(event), 500);
+      validationTimer = setTimeout(() => validate(event), type === 'input' ? 500 : 0);
     })
     .attr('onsubmit', null);
 
@@ -215,7 +218,8 @@ const ADVERTISE_STATE_MESSAGES = {
         // skip events triggered by syncing other wrapper fields
         return;
       }
-      
+
+      validateHasEverRan = true;
       errors = [];
       
       /**
@@ -354,13 +358,12 @@ const ADVERTISE_STATE_MESSAGES = {
       }
 
       /**
-       * Display errors?
+       * Display errors at top?
        */
       if (errors.length) {
         console.error(errors);
       } else {
         console.log('valid');
-        if (eventType === 'submit') form_on_submit();
       }
     }
 
