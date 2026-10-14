@@ -3423,10 +3423,10 @@
                                             now - Jobs NT id</label>
                                         <div class="ntgc-tip">
                                             Enter the <code
-                                                style="background:transparent;font-size:1em">?rtfid=<code>VALUE</code></code>
+                                                style="background:transparent;font-size:1em;margin-block: -1.5rem">?rtfid=<code>VALUE</code></code>
                                             to have a
                                             <a href="#"
-                                                style="pointer-events:none;transform:scale(0.7);margin:0 -1.5rem;font-size:1rem;"
+                                                style="pointer-events:none;transform:scale(0.6);margin: -1.5rem -2rem;font-size:1rem;"
                                                 class="ntgc-btn ntgc-btn--secondary"><span>Apply Now</span> <span
                                                     class="data-icon data-icon--view-job far fa-arrow-to-bottom pl-1"></span></a>
                                             button.
@@ -3435,7 +3435,7 @@
                                             class="form-control sq-form-field ntgc-text-input ntgc-text-input--block"
                                             id="metadata_field_text_998904_link_value">
 
-                                        <div>
+                                        <div style="display: none">
                                             <input type="text" name="link_0_206" size="35" aria-required="true"
                                                 required="" class="sq-form-field ntgc-text-input ntgc-text-input--block"
                                                 id="link_0_206">
@@ -3564,8 +3564,6 @@
                                             <option value="SOPER">PWC Senior Operator</option>
                                             <option value="NA">Not applicable</option>
                                         </select>
-                                        <div id="designation-warning" style="display: none;">Please select at least one
-                                            designation.</div>
                                         <div class="inline-error"></div>
                                     </div>
 
@@ -3776,12 +3774,6 @@
                                                     <option value="asset_updated">Last updated date</option>
                                                     <option value="asset_published">Last published date</option>
                                                 </select></span></div>
-
-                                        <div id="date-close-warning" style="display: none;">
-                                            The selected close date is less than 3 business days from today. An EOI must
-                                            be advertised for at least 3
-                                            business days.
-                                        </div>
                                         <div class="inline-error"></div>
                                     </div>
 
@@ -3888,17 +3880,13 @@
                                             <option value="tennant-creek">Tennant Creek</option>
                                             <option value="wadeye">Wadeye</option>
                                         </select>
-                                        <div id="location-warning" style="display: none;">Please select at least one
-                                            location.</div>
                                         <div class="inline-error"></div>
                                     </div>
 
                                     <div id="news--advertise" class="mb-2 news--type">
                                         <label for="metadata_field_select_446182" class="d-block mb-1">Where do you want
                                             to advertise this job?*</label>
-                                        <div class="ntgc-tip">The EOI will be advertised on the agency intranet and NTG
-                                            Central.<br>
-                                            Untick NTG Central to advertise only on the agency intranet.</div>
+                                        <div class="ntgc-tip advertise-tip"></div>
                                         <div id="advertise-selection">
                                             <input type="hidden" name="metadata_field_select_446182_link_posted"
                                                 value="1" class="sq-form-field"
@@ -4138,10 +4126,6 @@
                                             </table>
 
                                         </div>
-                                        <div id="agency-advertise-warning" style="display: none;">The selected agency
-                                            does not have a dedicated intranet listing. This EOI will be published on
-                                            NTG Central only.</div>
-                                        <div class="inline-error"></div>
                                     </div>
 
                                     <div class="d-none">
@@ -4310,8 +4294,6 @@
                                             </tbody>
                                         </table>
 
-                                        <div id="documentation-warning" style="display: none;">A Word document job
-                                            description must be attached.</div>
                                         <div class="inline-error"></div>
                                     </div>
 
@@ -4433,8 +4415,7 @@
                                             <option value="SOPER">PWC Senior Operator</option>
                                             <option value="NA">Not applicable</option>
                                         </select>
-                                        <div id="designation-warning" style="display: none;">Please select at least one
-                                            designation.</div>
+                                 
                                         <div class="inline-error"></div>
                                     </div>
 
@@ -4646,11 +4627,7 @@
                                                     <option value="asset_published">Last published date</option>
                                                 </select></span></div>
 
-                                        <div id="date-close-warning" style="display: none;">
-                                            The selected close date is less than 3 business days from today. An EOI must
-                                            be advertised for at least 3
-                                            business days.
-                                        </div>
+                                   
                                         <div class="inline-error"></div>
                                     </div>
 
@@ -4760,17 +4737,13 @@
                                             <option value="tennant-creek">Tennant Creek</option>
                                             <option value="wadeye">Wadeye</option>
                                         </select>
-                                        <div id="location-warning" style="display: none;">Please select at least one
-                                            location.</div>
                                         <div class="inline-error"></div>
                                     </div>
 
                                     <div id="news--advertise" class="mb-2 news--type">
                                         <label for="metadata_field_select_446182" class="d-block mb-1">Where do you want
                                             to advertise this job?*</label>
-                                        <div class="ntgc-tip">The EOI will be advertised on the agency intranet and NTG
-                                            Central.<br>
-                                            Untick NTG Central to advertise only on the agency intranet.</div>
+                                        <div class="ntgc-tip advertise-tip"></div>
                                         <div id="advertise-selection">
                                             <input type="hidden" name="metadata_field_select_446182_word_doc_posted"
                                                 value="1" class="sq-form-field"
@@ -5567,7 +5540,7 @@
         global-site-url="https://ntgcentral.nt.gov.au">
     </status-toolbar> <!--coveo_no_index_end_90-->
 
-    <script src="./js/eoi-form.js"></script>
+    <script src="./js/eoi-form-doc-and-link.js"></script>
     <!-- temp debug stuff -->
     <script>
         $(document).ready(() => {
