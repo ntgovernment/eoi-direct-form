@@ -70,7 +70,7 @@ const ADVERTISE_STATE_MESSAGES = {
       if (newActive && newActive !== activeWrapper) {
         activeWrapper = newActive;
         assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
-        sessionStorage.setItem('eoi-tab', activeWrapper.id + '_tab a');
+        sessionStorage.setItem('eoi-tab', `#${activeWrapper.id}_tab a`);
         // revalidate when switching tabs
         if (validateHasEverRan) validate();
       }
@@ -90,9 +90,15 @@ const ADVERTISE_STATE_MESSAGES = {
       submitButton.classList.remove('ntgc-file-upload');
       submitButton.textContent = 'Submit';
       // Disable immediately — updateSubmitButton() will re-enable when valid
-      // submitButton.disabled = true;
+      submitButton.disabled = true;
       inputBtn.parentNode.replaceChild(submitButton, inputBtn);
       submitButtons = submitButtons.add(submitButton);
+      submitButtons.on('click', () => {
+        $(this).attr('disabled', true).html(`
+          Submitting...please wait
+          <i class="fas fa-spinner-third fa-spin" style="margin-left: 8px"></i>
+        `);
+      });
     }
 
     $(SELECTORS.file).attr('accept', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword');
@@ -326,7 +332,6 @@ const ADVERTISE_STATE_MESSAGES = {
        * Advertise
        * No validation, its state are enforced in enhancement above
        */
-
 
       /**
        * Submit buttons state
