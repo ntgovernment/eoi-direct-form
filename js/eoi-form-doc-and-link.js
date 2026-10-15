@@ -93,12 +93,6 @@ const ADVERTISE_STATE_MESSAGES = {
       submitButton.disabled = true;
       inputBtn.parentNode.replaceChild(submitButton, inputBtn);
       submitButtons = submitButtons.add(submitButton);
-      submitButtons.on('click', () => {
-        $(this).attr('disabled', true).html(`
-          Submitting...please wait
-          <i class="fas fa-spinner-third fa-spin" style="margin-left: 8px"></i>
-        `);
-      });
     }
 
     $(SELECTORS.file).attr('accept', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword');
@@ -207,7 +201,7 @@ const ADVERTISE_STATE_MESSAGES = {
     let validationTimer;
 
     $('form[id^="page_asset_builder"]')
-    .on('change input', (event) => {
+    .on('change input submit', (event) => {
       const {type} = event;
       clearTimeout(validationTimer);
       validationTimer = setTimeout(() => validate(event), type === 'input' ? 500 : 0);
@@ -334,11 +328,6 @@ const ADVERTISE_STATE_MESSAGES = {
        */
 
       /**
-       * Submit buttons state
-       */
-      submitButtons.prop('disabled', errors.length);
-
-      /**
        * If there is a target sync fields
        * sync fields to the other wrapper(s)
        */
@@ -369,8 +358,13 @@ const ADVERTISE_STATE_MESSAGES = {
       if (errors.length) {
         console.error(errors);
       } else {
-        console.log('valid');
         $('.ntgc-form-alerts.ntgc-form-alerts--error').hide();
+        if (eventType === 'submit') {
+          submitButtons.attr('disabled', true).html(`
+            Submitting...please wait
+            <i class="fas fa-spinner-third fa-spin" style="margin-left: 8px"></i>
+          `);
+        }
       }
     }
 
