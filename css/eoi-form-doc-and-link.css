@@ -86,7 +86,8 @@
     }
 }
 
-.sq-limbo-section-heading {
+.sq-limbo-section-heading,
+.ntgc-form-alerts.ntgc-form-alerts--error {
   display: none;
 }
 

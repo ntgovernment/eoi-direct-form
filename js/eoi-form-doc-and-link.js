@@ -56,8 +56,6 @@ const ADVERTISE_STATE_MESSAGES = {
         return;
     }
 
-    serverErrorChecks();
-
     let errors = []; // live errors
     let validateHasEverRan;
     const wrappers = $(SELECTORS.wrappers);
@@ -72,6 +70,7 @@ const ADVERTISE_STATE_MESSAGES = {
       if (newActive && newActive !== activeWrapper) {
         activeWrapper = newActive;
         assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
+        sessionStorage.setItem('eoi-tab', activeWrapper.id + '_tab');
         // revalidate when switching tabs
         if (validateHasEverRan) validate();
       }
@@ -95,7 +94,9 @@ const ADVERTISE_STATE_MESSAGES = {
       inputBtn.parentNode.replaceChild(submitButton, inputBtn);
       submitButtons = submitButtons.add(submitButton);
     }
-    
+
+    $(SELECTORS.file).attr('accept', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword');
+
     let syncRegistry = new Set();
     function syncFields(selectors = []) {
       if (typeof selectors === 'string') selectors = [selectors];
@@ -364,6 +365,7 @@ const ADVERTISE_STATE_MESSAGES = {
         console.error(errors);
       } else {
         console.log('valid');
+        $('.ntgc-form-alerts.ntgc-form-alerts--error').hide();
       }
     }
 
@@ -410,31 +412,27 @@ const ADVERTISE_STATE_MESSAGES = {
         displays.hide();
       }
     }
-  }
 
-  function serverErrorChecks() {
-    const errorDiv = $('.ntgc-form-alerts.ntgc-form-alerts--error');
-
+    const serverErrorDiv = $('.ntgc-form-alerts.ntgc-form-alerts--error');
     // Check if the div exists and contains the specific error message
-    if (errorDiv.length && errorDiv.data('error-text')) {
-        const errorMessage = errorDiv.data('error-text');
-
+    const hasServerError = serverErrorDiv.length && serverErrorDiv.data('error-text');
+    if (hasServerError) {
+        const errorMessage = serverErrorDiv.data('error-text');
         // Log the error message to the console
         console.log('Error message found:', errorMessage);
-
-        // Remove "display: none;" if it exists
-        errorDiv.css('display', 'block');
-
         // Update the alert message content
-        errorDiv.html(`
+        serverErrorDiv.html(`
             <p>The internal vacancy was not created. Ensure you have entered all required information and try again.</p>
         `);
-
+        serverErrorDiv.show();
         // Scroll to the error message
         $("html, body").animate({
-            scrollTop: errorDiv.offset().top
+            scrollTop: serverErrorDiv.offset().top
         }, 500);
-
+        $(sessionStorage.getItem('eoi-tab')).trigger('click');
+        validate();
+    } else {
+      sessionStorage.removeItem('eoi-tab');
     }
   }
 
