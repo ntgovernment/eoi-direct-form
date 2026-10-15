@@ -70,7 +70,7 @@ const ADVERTISE_STATE_MESSAGES = {
       if (newActive && newActive !== activeWrapper) {
         activeWrapper = newActive;
         assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
-        sessionStorage.setItem('eoi-tab', activeWrapper.id + '_tab');
+        sessionStorage.setItem('eoi-tab', activeWrapper.id + '_tab a');
         // revalidate when switching tabs
         if (validateHasEverRan) validate();
       }
