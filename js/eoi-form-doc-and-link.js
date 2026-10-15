@@ -306,7 +306,6 @@ const ADVERTISE_STATE_MESSAGES = {
        * Agency
        */
       const agency = $(SELECTORS.agency, activeWrapper);
-      const agencyS = $(SELECTORS.agency);
       setError('agency', agency, {
         valid: agency.val().trim(),
         inline: !target || agency[0] === target
@@ -316,7 +315,6 @@ const ADVERTISE_STATE_MESSAGES = {
        * Location
        */
       const location = $(SELECTORS.location, activeWrapper);
-      const locationS = $(SELECTORS.location);
       setError('location', location, {
         valid: location.val().length,
         inline: !target || location[0] === target
@@ -355,6 +353,7 @@ const ADVERTISE_STATE_MESSAGES = {
       /**
        * Display errors at top?
        */
+      submitButtons.attr('disabled', !!errors.length);
       if (errors.length) {
         console.error(errors);
       } else {
@@ -404,7 +403,6 @@ const ADVERTISE_STATE_MESSAGES = {
         if (otherContainerChild) inlineErrors.set(otherContainerChild, displays);
       }
       
-      console.log({msg, displays});
       if (msg) {
         displays.html(msg).show();
       } else {
