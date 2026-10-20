@@ -53,17 +53,21 @@
             &:not(:last-child) {
                 padding-right: 2.5rem;
             }
-           
         }
         a {
             text-decoration: none;
-            font-size: 1rem;
+            font-size: 0;
+            color: transparent;
             font-weight: 500;
             padding: 1.5rem 0 1.5rem 0;
             margin-bottom: -4px;
             display: block;
             position: relative;
             transition: border 300ms ease;
+            &::before {
+              font-size: 1rem;
+              color: #304060;
+            }
             &::after {
               position: absolute;
               content: "";
@@ -74,14 +78,20 @@
               background: none;
             }
         }
+        
         .sq-asset-builder-tab-active a {
-            color: #208820;
+            &::before {
+              color: #208820;
+            }
             &:after {
                 border-bottom: 4px solid #20a030;
             }
         }
-        #page_asset_builder_1002518_type_link_tab a::before {
-            content: "Jobs NT ";
+        [id$="_type_word_doc_tab"] a::before {
+          content: "MS Word document";
+        }
+        [id$="_type_link_tab"] a::before {
+            content: "eRecruit link";
         }
     }
 }
