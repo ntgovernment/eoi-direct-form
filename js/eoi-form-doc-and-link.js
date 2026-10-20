@@ -146,16 +146,21 @@ const ADVERTISE_STATE_MESSAGES = {
       const { target } = event;
       const advertise = $(SELECTORS.advertise + ':visible', activeWrapper);
       const advertiseUnchecked = advertise.not(':checked');
-      const length = advertise.length - advertiseUnchecked.length;
+      let length = advertise.length - advertiseUnchecked.length;
+      let centralUnchecked = advertiseUnchecked.is('[value="WoG"]');
       let tipKey;
+      if (!length) {
+        $(`${SELECTORS.advertise}[value="WoG"]`).prop('checked', true);
+        length = 1;
+        centralUnchecked = false;
+      }
       switch (length) {
         case 0:
           // enforce NTG central ticked if its the only checkbox
-          $(`${SELECTORS.advertise}[value="WoG"]`).prop('checked', true);
           tipKey = 'centralOnly';
           break;
         case 1:
-          tipKey = advertiseUnchecked.is('[value="WoG"]') ? 'agencyOnly' : 'centralOnlyAgencyAvailable'
+          tipKey = centralUnchecked ? 'agencyOnly' : 'centralOnlyAgencyAvailable'
           break
         case 2:
           tipKey = 'centralAndAgency';
