@@ -204,38 +204,31 @@ const ADVERTISE_STATE_MESSAGES = {
     /**
      * Track multiselect states in session
      */
-    let _multiselectStates = {};
+    let multiselectStates = {};
     try {
-      _multiselectStates = JSON.parse(sessionStorage.getItem('eoi-multiselect-states') ?? '{}');
+      multiselectStates = JSON.parse(sessionStorage.getItem('eoi-multiselect-states') ?? '{}');
     } catch (err) {
-      _multiselectStates = {}
+      multiselectStates = {}
     }
     
-    const multiselectStates = new Proxy(_multiselectStates, {
-      get(target, key) {
-        return target[key];
-      },
-      set(target, key, value) {
-        target[key] = value;
-        sessionStorage.setItem('eoi-multiselect-states', JSON.stringify(target));
-        return true;
-      }
-    });
     // we set values on submit
-    const allMultiselects = $('select[multiple]').each((_, multiselect) => {
-      const values = multiselectStates[multiselect.id.replace(/(_word_doc|_link)/g,'')];
-      if (Array.isArray(values)) {
-        $(multiselect).val(values);
-      }
-    });
-    const persistMultiselectStates = () => {
+    const allMultiselects = $('select[multiple]');
+    const restoreMultiselectStates = () => {
+      allMultiselects.each((_, multiselect) => {
+        const values = multiselectStates[multiselect.id.replace(/(_word_doc|_link)/g,'')];
+        if (Array.isArray(values)) {
+          $(multiselect).val(values);
+        }
+      });
+    };
+    const persistMultiselectStates = (eventType) => {
+      multiselectStates = { eventType };
       $('select[multiple]', activeWrapper).each((_, multiselect) => {
-        console.log(multiselect)
         const idStart = multiselect.id.replace(/(_word_doc|_link)/g,'');
         multiselectStates[idStart] = $(multiselect).val();
       });
+      sessionStorage.setItem('eoi-multiselect-states', JSON.stringify(multiselectStates));
     };
-    // window.persistMultiselectStates = persistMultiselectStates; // to test
 
     /**
      * Validation
@@ -396,6 +389,9 @@ const ADVERTISE_STATE_MESSAGES = {
         }
       }
 
+      if (['change', 'submit'].includes(eventType)) {
+        persistMultiselectStates(eventType);
+      }
       /**
        * Display errors at top?
        */
@@ -405,7 +401,6 @@ const ADVERTISE_STATE_MESSAGES = {
       } else {
         $('.ntgc-form-alerts.ntgc-form-alerts--error').hide();
         if (eventType === 'submit') {
-          persistMultisectStates();
           submitButtons.attr('disabled', true).html(`
             Submitting...please wait
             <i class="fas fa-spinner-third fa-spin" style="margin-left: 8px"></i>
@@ -474,8 +469,10 @@ const ADVERTISE_STATE_MESSAGES = {
             scrollTop: serverErrorDiv.offset().top
         }, 500);
         $(sessionStorage.getItem('eoi-tab')).trigger('click');
+        restoreMultiselectStates();
         validate();
     } else {
+      if (multiselectStates?.eventType === 'change') restoreMultiselectStates();
       sessionStorage.removeItem('eoi-tab');
       sessionStorage.removeItem('eoi-multiselect-states');
     }
