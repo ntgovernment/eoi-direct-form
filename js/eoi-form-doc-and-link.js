@@ -472,9 +472,13 @@ const ADVERTISE_STATE_MESSAGES = {
         restoreMultiselectStates();
         validate();
     } else {
-      if (multiselectStates?.eventType === 'change') restoreMultiselectStates();
+      if (multiselectStates?.eventType === 'change') {
+        restoreMultiselectStates();
+      } else {
+        // either there is none or it was submit and was successful
+        sessionStorage.removeItem('eoi-multiselect-states');
+      }
       sessionStorage.removeItem('eoi-tab');
-      sessionStorage.removeItem('eoi-multiselect-states');
     }
   }
 
