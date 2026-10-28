@@ -24,7 +24,7 @@ const SELECTORS = {
 };
 
 const ERRORS = {
-  rtfid: 'Jobs NT id is required and must be a 6 digit number.',
+  linkUrl: 'eRecruit URL must be valid',
   file: 'A Word document job description must be attached.',
   position: 'Position title is required.',
   designation: 'Please select at least one designation.',
@@ -56,8 +56,10 @@ const ADVERTISE_STATE_MESSAGES = {
         return;
     }
 
+    const eRecruitURL = 'https://jobs.nt.gov.au/Home/JobDetails?rtfId=';
     let errors = []; // live errors
     let validateHasEverRan;
+
     const wrappers = $(SELECTORS.wrappers);
     let activeWrapper = [...wrappers].find(w => w.style.display !== 'none');
     let assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
@@ -180,29 +182,64 @@ const ADVERTISE_STATE_MESSAGES = {
     // init agency/advertise state
     handleAgency({target: $(SELECTORS.agency + ':visible', activeWrapper)[0]});
     
-    // Manually sync link {name, url} based on position and rtfid values
+    // Link asset link_url and name + rtfid
     const linkName = $(SELECTORS.link.name).attr('required', null);
     const linkUrl = $(SELECTORS.link.url);
+    const rtfid = $(SELECTORS.rtfid);
     $('body').on('input', SELECTORS.position, (event) => {
       linkName.val(event.target.value);
     });
-    $(SELECTORS.rtfid).on('input', (event) => {
-      const value = event.target.value;
-      const url = value
-            ? 'https://jobs.nt.gov.au/Home/JobDetails?rtfId=' + value
-            : '';
-      // future validate? prefill?
-      linkUrl.val(url);
-    });
+    const linkHintUrl = $(`<span>${eRecruitURL}</span>`);
+    const linkHintID = $('<strong>123456</strong>');
+    $('#linkUrlHint').append(linkHintUrl,linkHintID);
+    // we do both validation and id extraction in validation now
 
-    /** TODO
+
+    /** TODO?
      * Pre fill duration
      */
     // on change of closing dat if duration empty
     // on blur of duration if empty
 
+    /**
+     * Track multiselect states in session
+     */
+    let _multiselectStates = {};
+    try {
+      _multiselectStates = JSON.parse(sessionStorage.getItem('eoi-multiselect-states') ?? '{}');
+    } catch (err) {
+      _multiselectStates = {}
+    }
+    
+    const multiselectStates = new Proxy(_multiselectStates, {
+      get(target, key) {
+        return target[key];
+      },
+      set(target, key, value) {
+        target[key] = value;
+        sessionStorage.setItem('eoi-multiselect-states', JSON.stringify(target));
+        return true;
+      }
+    });
+    // we set values on submit
+    const allMultiselects = $('select[multiple]').each((_, multiselect) => {
+      const values = multiselectStates[multiselect.id.replace(/(_word_doc|_link)/g,'')];
+      if (Array.isArray(values)) {
+        $(multiselect).val(values);
+      }
+    });
+    const persistMultiselectStates = () => {
+      $('select[multiple]', activeWrapper).each((_, multiselect) => {
+        console.log(multiselect)
+        const idStart = multiselect.id.replace(/(_word_doc|_link)/g,'');
+        multiselectStates[idStart] = $(multiselect).val();
+      });
+    };
+    // window.persistMultiselectStates = persistMultiselectStates; // to test
 
-
+    /**
+     * Validation
+     */
     let validationTimer;
 
     $('form[id^="page_asset_builder"]')
@@ -234,14 +271,18 @@ const ADVERTISE_STATE_MESSAGES = {
       switch (assetType) {
         case 'link':
           {
-            /**
-             * Note: the asset name and url is set in the hidden fields
-             */
-            const rtfid =  $(SELECTORS.rtfid);
-            const val = rtfid.val();
-            setError('rtfid', rtfid, {
-              valid: val && val.length === 6 && !isNaN(val),
-              inline: !target || rtfid[0] === target
+            let val = linkUrl.val().trim();
+            let valid = val.startsWith(eRecruitURL);
+            linkHintUrl[`${valid ? 'remove' : 'add'}Class`]('--error');
+
+            const _rtfid = val.match(/rtfId=([0-9]{6})/i)?.[1] ?? '';
+            rtfid.attr('value', _rtfid);
+            valid = !!_rtfid;
+            linkHintID[`${valid ? 'remove' : 'add'}Class`]('--error');
+            
+            setError('linkUrl', linkUrl, {
+              valid,
+              inline: !target || linkUrl[0] === target
             });
           }
           break;
@@ -364,6 +405,7 @@ const ADVERTISE_STATE_MESSAGES = {
       } else {
         $('.ntgc-form-alerts.ntgc-form-alerts--error').hide();
         if (eventType === 'submit') {
+          persistMultisectStates();
           submitButtons.attr('disabled', true).html(`
             Submitting...please wait
             <i class="fas fa-spinner-third fa-spin" style="margin-left: 8px"></i>
@@ -435,6 +477,7 @@ const ADVERTISE_STATE_MESSAGES = {
         validate();
     } else {
       sessionStorage.removeItem('eoi-tab');
+      sessionStorage.removeItem('eoi-multiselect-states');
     }
   }
 

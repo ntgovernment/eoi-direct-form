@@ -199,3 +199,10 @@ select.--error {
 input[name*="word_doc_0"].--error {
   outline: 2px solid var(--clr-status-danger, #a60f37);
 }
+
+#linkUrlHint {
+  > * { opacity: .5}
+  .--error {
+    color: var(--clr-status-danger, #a60f37);
+  }
+}
