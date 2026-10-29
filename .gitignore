@@ -133,6 +133,8 @@ dist
 # Downloaded reference files
 Directly publish an expression of interest _ NTG Central.html
 Directly publish an expression of interest _ NTG Central_files/
+Direct publish an eRecruit link _ NTG Central.html
+Direct publish an eRecruit link _ NTG Central_files/
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases

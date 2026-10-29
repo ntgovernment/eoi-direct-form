@@ -67,7 +67,6 @@
  * | Advertise checkboxes     | input[name^="metadata_field_select_446182"]      |
  * | NTG Central checkbox     | #metadata_field_select_446182_WoG                |
  * | Agency checkbox (dyn.)   | #metadata_field_select_446182_{AGENCY_CODE}      |
- * | Documentation (file)     | input[name="word_doc_0"]                         |
  * | Declaration checkbox     | #metadata_field_select_691088_declare            |
  * | Declaration section      | #declaration                                     |
  * | Submit button            | #sq_commit_button  (a <button>, not <input>)     |
@@ -79,14 +78,12 @@
  * | #date-close-warning        | Close date is < 3 business days from today           |
  * | #location-warning         | No location selected                                 |
  * | #agency-advertise-warning | Agency chosen has no matching advertise checkbox (informational — NTG Central fallback still allows submission) |
- * | #documentation-warning    | No Word document attached                            |
  *
  * ## CSS error classes (defined in css/eoi-form.css)
  * | Class                | Applied to                                    |
  * |----------------------|-----------------------------------------------|
  * | .ntgc-date--error    | Close-date day / month / year <select>s       |
  * | .ntgc-select--error  | Designation, Location, Agency <select>s       |
- * | .ntgc-file--error    | Documentation file <input>                    |
  *
  * ## Agencies without an intranet advertise row (NTG Central fallback only)
  * AAPA, AGO, DPC, DWC, ICAC, InfoComm, JE, LDC, NTEC, NTJC, NTLAC,
@@ -111,6 +108,24 @@
  *   d) The CMS inline onclick is stripped; submission is fully controlled by
  *      the click listener attached here.
  */
+const EoiForm = (function () {
+  let variant;
+
+  return {
+    registerVariant(config) {
+      variant = config;
+    },
+    validateVariant() {
+      return variant ? variant.validate() : false;
+    },
+    setupVariant(updateSubmitButton) {
+      if (variant) variant.setup(updateSubmitButton);
+    },
+  };
+})();
+
+window.EoiForm = EoiForm;
+
 document.addEventListener("DOMContentLoaded", function () {
   // Auto-check the declaration checkbox and hide the entire section
   const declaration = document.getElementById("declaration");
@@ -237,6 +252,8 @@ document.addEventListener("DOMContentLoaded", function () {
           closeDateSelects.removeClass("ntgc-date--error");
         }
       }
+
+      if (!EoiForm.validateVariant()) allFilled = false;
 
       console.log(`All fields filled: ${allFilled}`);
 
@@ -482,13 +499,13 @@ $(document).ready(function () {
    *   3. Close date              — all three parts (d/m/y) must be set (not "--")
    *   4. Agency + advertise      — an agency must be chosen AND a matching
    *                                checkbox row must exist in the advertise table
-   *   5. Documentation           — a file must be attached to word_doc_0
+  *   5. Form-specific validation registered by the page's variant script
    *
    * Called from:
    *   - $(agency).on("change", …)
    *   - Designation / location change listeners
    *   - Date select change listeners
-   *   - File input change listener
+  *   - Variant input listeners
    *   - $(document).ready() on page load (after date pre-population)
    */
   function updateSubmitButton() {
@@ -551,14 +568,7 @@ $(document).ready(function () {
       'input[name^="metadata_field_select_446182"]:checked',
     ).length > 0;
 
-    // 5. Documentation file upload
-    var fileInput = $("input[name='word_doc_0']");
-    var documentationOk =
-      fileInput.length > 0 &&
-      fileInput[0].files &&
-      fileInput[0].files.length > 0;
-    $("#documentation-warning").toggle(!documentationOk);
-    fileInput.toggleClass("ntgc-file--error", !documentationOk);
+    var variantOk = EoiForm.validateVariant();
 
     btn.prop(
       "disabled",
@@ -568,7 +578,7 @@ $(document).ready(function () {
         dateOk &&
         agencySelected &&
         advertiseOk &&
-        documentationOk
+        variantOk
       ),
     );
   }
@@ -579,7 +589,7 @@ $(document).ready(function () {
     updateSubmitButton,
   );
 
-  $("input[name='word_doc_0']").on("change", updateSubmitButton);
+  EoiForm.setupVariant(updateSubmitButton);
 
   $(document).on(
     "change",

@@ -162,6 +162,7 @@ div.sq-metadata-date-wrapper {
 #designation-warning,
 #location-warning,
 #agency-advertise-warning,
+#link-warning,
 #documentation-warning {
   width: 100%;
   color: var(--clr-status-danger, #a60f37);
@@ -178,7 +179,8 @@ div.sq-metadata-date-wrapper {
   border-color: var(--clr-status-danger, #a60f37) !important;
 }
 
-#metadata_field_select_445640.ntgc-select--error {
+#metadata_field_select_445640.ntgc-select--error,
+#link_0_207.ntgc-select--error {
   border-color: var(--clr-status-danger, #a60f37) !important;
 }
 

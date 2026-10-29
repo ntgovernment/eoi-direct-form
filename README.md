@@ -1,6 +1,6 @@
 # eoi-direct-form
 
-Front-end assets (JS and CSS) for the **Expression of Interest Direct Publish** form in Squiz Matrix. The source files are authored here and served to Matrix via a **Git File Bridge**, which allows Matrix to reference the raw files directly from this repository without a build step.
+Front-end assets (JS and CSS) for the **EOI document** and **eRecruit link** direct-publish forms in Squiz Matrix. The source files are authored here and served to Matrix via a **Git File Bridge**, which allows Matrix to reference the raw files directly from this repository without a build step.
 
 ---
 
@@ -9,22 +9,62 @@ Front-end assets (JS and CSS) for the **Expression of Interest Direct Publish** 
 ```
 eoi-direct-form/
 ├── html/
-│   └── eoi-form.html        # Squiz Matrix content template – the form body (deployed to Matrix)
+│   ├── eoi-form-doc.html    # EOI document content template
+│   ├── eoi-form-link.html   # eRecruit link content template
+│   └── dev/                # Development content templates
 ├── js/
-│   └── eoi-form.js          # Main JavaScript entry point – all form logic goes here
+│   ├── eoi-form.js          # Shared form behaviour and variant registration
+│   ├── eoi-form-doc.js      # EOI document-upload validation
+│   ├── eoi-form-link.js     # eRecruit URL validation
+│   ├── eoi-form.test.cjs    # Node regression tests
+│   └── eoi-form-doc-and-link.js # Separate combined-tab implementation
 ├── css/
 │   └── eoi-form.css         # Main stylesheet – all form styles go here
-├── index.html               # Dev-only redirect to the reference HTML page
 ├── vite.config.js           # Vite configuration (dev server only)
-├── Directly publish an expression of interest _ NTG Central.html  # Local reference snapshot (not deployed)
-├── Directly publish an expression of interest _ NTG Central_files/ # Static assets for above (not deployed)
+├── Direct publish an EOI _ NTG Central.html          # Ignored local snapshot
+├── Direct publish an eRecruit link _ NTG Central.html # Ignored local snapshot
 ├── package.json
 └── README.md
 ```
 
-> The `Directly publish an expression of interest _ NTG Central.html` file and its `_files/` folder are **gitignored** — they are a local reference copy of the live Matrix page. They are never deployed.
+> Reference snapshots matching `Direct publish*`, including their `_files/` folders, are **gitignored** local copies of the live Matrix pages. They are not deployed or included in a fresh clone; obtain them separately for full-page previews.
 
 ---
+
+## Form scripts
+
+Each Matrix page must load jQuery, then the shared script, then exactly one
+variant script. Use the existing Git File Bridge URL prefix for production:
+
+```html
+<script src="/js/eoi-form.js"></script>
+<!-- EOI document page only -->
+<script src="/js/eoi-form-doc.js"></script>
+```
+
+On the eRecruit page, use `js/eoi-form-link.js` instead of `js/eoi-form-doc.js`.
+Use ordinary scripts in this order, without `async`, before DOMContentLoaded.
+Do not also load the old snapshot copies or the separate combined-tab script
+`js/eoi-form-doc-and-link.js` on these pages.
+
+`window.EoiForm.registerVariant({ setup, validate })` connects each variant to
+the shared form. `setup(updateSubmitButton)` binds its input events; `validate()`
+updates its warnings and returns a boolean. Shared validation calls it both
+when updating the submit button and immediately before submitting. Without a
+registered variant, submission stays disabled.
+
+The EOI variant requires an attachment in `input[name="word_doc_0"]` and uses
+`#documentation-warning`. The link variant requires an absolute HTTP or HTTPS
+URL in `#link_0_207` and uses `#link-warning`; it does not require an upload.
+It does not restrict the URL hostname or require a particular job-ID format.
+The link content templates use `%details-S_details%` to render Matrix's link
+details; confirm that the link schema renders `#link_0_207` when deploying.
+
+Run the focused validation tests with:
+
+```bash
+node --test js/eoi-form.test.cjs
+```
 
 ## Prerequisites
 
@@ -41,26 +81,31 @@ Install dependencies (first time only):
 npm install
 ```
 
-Start the local dev server with hot module replacement (HMR):
+Start the local dev server:
 
 ```bash
 npm run dev
 ```
 
-Vite starts at `http://localhost:5173` and opens the reference HTML page automatically via the `index.html` redirect. Any changes to `js/eoi-form.js` or `css/eoi-form.css` are reflected in the browser instantly without a page reload.
+Vite normally starts at `http://localhost:5173`; use the URL printed in the terminal if that port is occupied. There is no `index.html` redirect. The current Vite configuration may open that missing path automatically, so navigate directly to an available local snapshot:
+
+- EOI: `http://localhost:5173/Direct%20publish%20an%20EOI%20_%20NTG%20Central.html`
+- eRecruit: `http://localhost:5173/Direct%20publish%20an%20eRecruit%20link%20_%20NTG%20Central.html`
+
+Each snapshot must load `/css/eoi-form.css`, then `/js/eoi-form.js` followed by its matching variant script after jQuery. Reload the page after JavaScript edits. Matrix template placeholders in `html/` require CMS rendering and are not standalone preview pages.
 
 ---
 
 ## Reference HTML — local dev modifications
 
-The reference HTML (`Directly publish an expression of interest _ NTG Central.html`) is a snapshot of the live Matrix page. For it to work correctly in the local Vite dev server, several modifications are made to the file that differ from the production version. These changes are **never deployed** — they exist only to support local development.
+The reference HTML files are snapshots of the live Matrix pages. For them to work in the local Vite dev server, use the local source paths below rather than the downloaded script copies. These snapshot changes are **never deployed**.
 
 | What                           | Production (Matrix)                                                                                 | Local dev (reference HTML)                                                |
 | ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | FontAwesome                    | Pro CSS loaded via Matrix asset pipeline                                                            | Kit JS: `<script src="https://kit.fontawesome.com/9bf658a5c7.js">`        |
 | jQuery                         | Loaded by Matrix from `https://ntgcentral-dev.nt.gov.au/…/jquery-3.4.1.min.js`                      | Loaded from local `_files/jquery-3.4.1.min.js`                            |
-| `eoi-form.css` loading         | `<style href="https://ntgcentral-dev.nt.gov.au/…/git_bridge/…/eoi-form.css">` (Matrix bridge)       | `<link rel="stylesheet" href="/css/eoi-form.css">` (Vite serves it)       |
-| `eoi-form.js` loading          | `<script type="text/javascript" src="https://ntgcentral-dev.nt.gov.au/…/git_bridge/…/eoi-form.js">` | `<script type="module" src="/js/eoi-form.js">` (Vite processes it)        |
+| Stylesheet loading            | Git File Bridge URL for `css/eoi-form.css` | `<link rel="stylesheet" href="/css/eoi-form.css">` |
+| Script loading                | Git File Bridge URLs for the shared script and one variant | Plain `<script>` tags for `/js/eoi-form.js`, then `/js/eoi-form-doc.js` or `/js/eoi-form-link.js` |
 | `JSON.parse` in status toolbar | `JSON.parse('')` (Matrix renders an empty string — valid in its server context)                     | `JSON.parse('{}')` (prevents `SyntaxError: Unexpected end of JSON input`) |
 
 ### FontAwesome dev kit
@@ -85,15 +130,19 @@ These are **expected and harmless** in the local dev environment. The remote ser
 
 | File                 | Purpose                                                                                                                     |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `html/eoi-form.html` | Matrix content template for the asset builder page. Contains the form body layout using Matrix template variables. Deployed as the "Content" of the Matrix asset builder page. |
-| `js/eoi-form.js`     | JavaScript for the EOI form.                                                                                                |
+| `html/eoi-form-doc.html` | Matrix content template for the EOI document asset builder page. |
+| `html/eoi-form-link.html` | Matrix content template for the eRecruit link asset builder page. |
+| `js/eoi-form.js`     | Shared declaration, submission, closing-date, agency, and common validation behaviour. |
+| `js/eoi-form-doc.js` | Document-only input listener, required-upload validation, and warning state. |
+| `js/eoi-form-link.js` | Link-only input listeners, URL validation, and warning state. |
+| `js/eoi-form.test.cjs` | Regression tests for both variants and the noon/weekend closing-date rules. |
 | `css/eoi-form.css`   | Styles for the EOI form. Loaded via `<link>` in the local dev reference HTML; loaded via the Git File Bridge in production. |
 
 ---
 
-## Matrix page template (`html/eoi-form.html`)
+## Matrix page templates
 
-This file is the **Content** of the Squiz Matrix asset builder page. It defines the form body layout and is pasted into (or bridged into) the Matrix CMS content editor.
+Use `html/eoi-form-doc.html` as the **Content** of the document asset builder page and `html/eoi-form-link.html` for the link page. These define the form body layout and are pasted into (or bridged into) the Matrix CMS content editor. Configure the script tags separately in each page's asset loading.
 
 ### Matrix template syntax
 
@@ -103,12 +152,12 @@ This file is the **Content** of the Squiz Matrix asset builder page. It defines 
 | `%metadata-id_F_{ASSET_ID}%` | The field's HTML `id` attribute value (used in `<label for="">`) |
 | `%globals_date_Y%` | Current four-digit year (server-side variable) |
 | `%globals_date_y%` | Current two-digit year |
-| `%details-S_{SCHEMA_ID}%` | Renders a details schema section (used for the file upload area) |
+| `%details-S_{SCHEMA_ID}%` | Renders the asset details schema (document upload or link details, depending on the page's asset type) |
 | `%commit_button^replace:{OLD_CLASS}:{NEW_CLASS}%` | Renders the Matrix submit button, replacing `{OLD_CLASS}` with `{NEW_CLASS}` on the element |
 
 ### Warning elements required in this file
 
-`js/eoi-form.js` shows and hides inline warning `<div>`s by ID. Four of these elements are styled in `css/eoi-form.css` but must also be **physically present** in the Matrix page HTML (with `style="display: none;"`) for them to work. They are not currently in this file — add them adjacent to their corresponding fields:
+The shared and variant scripts show and hide inline warning `<div>`s by ID. The templates include these elements; retain them when deploying or editing CMS content. Each must be present in the rendered form with `style="display: none;"` initially:
 
 | ID | Place after | Trigger condition |
 |----|-------------|-------------------|
@@ -116,8 +165,9 @@ This file is the **Content** of the Squiz Matrix asset builder page. It defines 
 | `#location-warning` | `%metadata-F_445518%` | No location selected |
 | `#agency-advertise-warning` | `#advertise-selection` | Selected agency has no matching advertise checkbox row (informational — NTG Central fallback still allows submission) |
 | `#documentation-warning` | `%details-S_details%` | No file attached |
+| `#link-warning` | `%details-S_details%` | URL is empty or is not an absolute HTTP/HTTPS URL (link page only) |
 
-> `#date-close-warning` is already present in `html/eoi-form.html` and does not need to be added.
+`#documentation-warning` belongs on the document page only. Both templates also include `#date-close-warning` adjacent to the close date field.
 
 ---
 
@@ -128,7 +178,7 @@ This file is the **Content** of the Squiz Matrix asset builder page. It defines 
 jQuery is **not bundled** in this repo. In production, it is loaded by Matrix before the Git File Bridge assets. In local development, it is loaded from the local `_files/` folder in the reference HTML:
 
 ```html
-<script src="./Directly%20publish%20an%20expression%20of%20interest%20_%20NTG%20Central_files/jquery-3.4.1.min.js"></script>
+<script src="./Direct%20publish%20an%20EOI%20_%20NTG%20Central_files/jquery-3.4.1.min.js"></script>
 ```
 
 All `$()` calls in `eoi-form.js` depend on jQuery being available as a global. Do **not** import or bundle jQuery.
@@ -151,6 +201,7 @@ These are the Matrix-generated field IDs targeted by `eoi-form.js` and `eoi-form
 | — NTG Central checkbox           | `<input checkbox>`       | `metadata_field_select_446182_WoG`                     |                 |
 | — Agency-specific checkbox       | `<input checkbox>`       | `metadata_field_select_446182_{AGENCY_CODE}`           |                 |
 | File upload                      | `<input file>`           | inside `div[data-ref="file-upload"]`                   |                 |
+| eRecruit URL                     | `<input text>`           | `link_0_207`                                           |                 |
 | Submit button                    | `<input button>`         | `sq_commit_button`                                     |                 |
 | Close date warning               | `<div>`                  | `#date-close-warning`                                  |                 |
 | Error alert banner               | `<div>`                  | `.ntgc-form-alerts.ntgc-form-alerts--error`            |                 |
@@ -171,8 +222,10 @@ Agency checkbox IDs follow the pattern `metadata_field_select_446182_{CODE}` whe
    - `#metadata_field_text_445506_value` (Duration) — `<input text>` must not be blank
    - `#metadata_field_select_445640` (Agency) — `<select>` must have a value
    - At least one `input[name^="metadata_field_select_446182"]` checkbox must be checked
+  - Close date must satisfy the current working-day minimum
+  - The registered document or link validator must return `true`
 3. **On validation failure**: makes `.ntgc-form-alerts.ntgc-form-alerts--error` visible, injects the error message HTML, and scrolls to it.
-4. **On validation pass**: sets the button label to `"Saving..."`, then calls Matrix's global `submit_form(form, true)` if defined, or falls back to `form.submit()`.
+4. **On validation pass**: disables the button, displays `"Submitting...please wait"` with a spinner, then calls Matrix's global `submit_form(form, true)` if defined, or falls back to `form.submit()`.
 
 ### On `$(document).ready`
 
@@ -184,6 +237,10 @@ Calculates a default close date and pre-selects the five date/time `<select>` dr
   - Before 12pm → add **2** working days.
   - From 12pm onward → add **3** working days.
 - **Time**: always pre-set to 23:45.
+
+The cutoff is exactly **12:00 noon**, using the browser's local time. At and after noon, the default is one additional **working day**, not necessarily one calendar day. Saturdays and Sundays are skipped; public holidays are not accounted for. Both separate forms use this shared calculation, matching the combined-tab script.
+
+For example, opening on Monday before noon defaults to Wednesday; Monday at or after noon defaults to Thursday. Friday before noon defaults to Tuesday; Friday at or after noon defaults to Wednesday. Defaults are set on page load; validation recalculates the minimum using the current time, so a form left open across noon may need its close date advanced before submission.
 
 #### Agency → advertise-site sync
 
@@ -203,7 +260,9 @@ When `#metadata_field_select_445640` (Agency) changes:
 | Function                       | Scope    | Description                                                                     |
 | ------------------------------ | -------- | ------------------------------------------------------------------------------- |
 | `addWorkingDays(date, days)`   | Global   | Returns a new `Date` incremented by `days` working days (Mon–Fri).              |
-| `countWorkingDays(start, end)` | Closured | Returns the integer count of working days between two `Date` objects.           |
+| `getMinimumCloseDateWorkingDays(date)` | Global | Returns 2 before noon and 3 from noon onward. |
+| `countWorkingDays(start, end)` | Global | Returns the integer count of working days between two `Date` objects.           |
+| `isCloseDateValid(selectedDate, now)` | Global | Enforces the same time-based working-day minimum used by the default date. |
 | `checkCloseDateWarning()`      | Closured | Reads the three close date `<select>` elements and updates the warning display using the same time-based working-day rule as the prefill. |
 | `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. The close date must be present and satisfy the same before-noon/after-noon working-day rule used by the prefill. Gates on Agency by "is a value selected and at least one advertise checkbox checked", not on a dedicated advertise row existing for that agency. Call this after any programmatic field change. |
 
@@ -241,13 +300,19 @@ The Git File Bridge in Matrix is pointed at this repository. Matrix serves the f
 | Asset      | Repository path    |
 | ---------- | ------------------ |
 | JavaScript | `js/eoi-form.js`   |
+| EOI variant | `js/eoi-form-doc.js` |
+| eRecruit variant | `js/eoi-form-link.js` |
 | Stylesheet | `css/eoi-form.css` |
 
 **To deploy a change:**
 
-1. Edit `js/eoi-form.js` and/or `css/eoi-form.css`.
-2. Commit and push to the branch the Git File Bridge is tracking.
-3. Matrix will serve the updated files on the next bridge sync (or immediately if configured to pull on demand).
+1. Edit the appropriate shared or variant script, stylesheet, or content template.
+2. Run `node --test js/eoi-form.test.cjs` and check syntax for any modified scripts.
+3. Configure each Matrix page to load the shared script followed by its own variant, as shown above. Apply template changes in the corresponding asset builder page.
+4. Commit and push to the branch the Git File Bridge is tracking.
+5. Matrix will serve the updated files on the next bridge sync (or immediately if configured to pull on demand).
+
+The Node tests cover required uploads, missing upload fields, valid and invalid URLs, variant event bindings, the noon boundary, and weekend rollover. Local browser checks also covered each form's submit gate and click-time variant validation. These checks do not publish a real vacancy or verify the production Matrix configuration.
 
 The production Matrix page loads `eoi-form.js` as a plain `text/javascript` script (not a module). Do not use ES module syntax (`import`/`export`) at the top level of `eoi-form.js`.
 
@@ -260,10 +325,10 @@ The production Matrix page loads `eoi-form.js` as a plain `text/javascript` scri
 - **`eoi-form.js` runs as a plain script in production** (not a module). Do not use ES module syntax (`import`/`export`) — there is no bundler to process it, and it will throw a `SyntaxError` at runtime.
 - **The reference HTML is the source of truth for DOM structure.** Before adding or changing a selector in `js/eoi-form.js` or `css/eoi-form.css`, verify the ID, class, or `data-attribute-filter` value against the reference HTML file.
 - **The reference HTML has been modified for local dev** (see the [Local dev modifications](#reference-html--local-dev-modifications) table above). When refreshing the reference HTML from the live site, re-apply those five changes before running `npm run dev`.
-- **Do not edit the reference HTML to implement features.** It is a local dev aid only. All logic belongs in `js/eoi-form.js` and `css/eoi-form.css`.
+- **Do not edit the reference HTML to implement features.** It is a local dev aid only. Shared logic belongs in `js/eoi-form.js`, document-specific behaviour in `js/eoi-form-doc.js`, link-specific behaviour in `js/eoi-form-link.js`, and styles in `css/eoi-form.css`.
 - **CORS font errors in dev are expected** and do not indicate a problem with the code.
 - **Matrix injects many irrelevant UI rows and labels into the form DOM.** The CSS deliberately hides these with `[data-attribute-filter]` selectors. If a DOM element appears to be missing, check whether it is being hidden by one of these rules before concluding it doesn't exist.
-- **`html/eoi-form.html` is the Matrix page content template.** Changes to form layout, labels, tips, or the placement of warning `<div>`s must be made here and then applied in Matrix. Do not confuse it with the reference HTML snapshot — they serve different purposes.
-- **Warning `<div>` elements must exist in the Matrix page HTML.** `updateSubmitButton()` calls `.toggle()` on `#designation-warning`, `#location-warning`, `#agency-advertise-warning`, and `#documentation-warning`. If these elements are absent from the DOM, warnings silently fail to appear. They must be added to `html/eoi-form.html` as `<div id="…" style="display: none;">…warning text…</div>` adjacent to their fields. See the [Warning elements](#warning-elements-required-in-this-file) table.
+- **`html/eoi-form-doc.html` and `html/eoi-form-link.html` are the Matrix page content templates.** Make layout, label, tip, or warning placement changes in the appropriate template, then apply them in Matrix. Reference snapshots serve a different purpose.
+- **Warning `<div>` elements must exist in the Matrix page HTML.** Shared validation updates the common warnings; each variant updates its own warning. If these elements are absent, warnings silently fail to appear. See the [Warning elements](#warning-elements-required-in-this-file) table.
 - `vite.config.js` is intentionally minimal (`root: "."`, `server.open`). Do not add a `build` block unless compiled output is explicitly required by a new deployment target.
-- Keep all JS in `js/eoi-form.js` and all CSS in `css/eoi-form.css` unless scope grows significantly and splitting is discussed with the team.
+- Keep common JavaScript in `js/eoi-form.js` and form-specific behaviour in the matching variant. Do not load `js/eoi-form-doc-and-link.js` alongside the separate-form scripts.
