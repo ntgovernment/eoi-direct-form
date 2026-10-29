@@ -87,6 +87,7 @@ These are **expected and harmless** in the local dev environment. The remote ser
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `html/eoi-form.html` | Matrix content template for the asset builder page. Contains the form body layout using Matrix template variables. Deployed as the "Content" of the Matrix asset builder page. |
 | `js/eoi-form.js`     | JavaScript for the EOI form.                                                                                                |
+| `js/eoi-form-doc-and-link.js` | JavaScript for the direct-publish EOI document and eRecruit-link forms, including validation and field synchronization. |
 | `css/eoi-form.css`   | Styles for the EOI form. Loaded via `<link>` in the local dev reference HTML; loaded via the Git File Bridge in production. |
 
 ---
@@ -208,6 +209,12 @@ When `#metadata_field_select_445640` (Agency) changes:
 | `updateSubmitButton()`         | Closured | Evaluates all required-field conditions; enables/disables `#sq_commit_button` and toggles all inline warning `<div>`s and error CSS classes. The close date must be present and satisfy the same before-noon/after-noon working-day rule used by the prefill. Gates on Agency by "is a value selected and at least one advertise checkbox checked", not on a dedicated advertise row existing for that agency. Call this after any programmatic field change. |
 
 > `addWorkingDays` is declared at module scope (not inside `$(document).ready`) because it may be called by other scripts on the Matrix page.
+
+## Direct-publish document and link forms
+
+`js/eoi-form-doc-and-link.js` enhances the direct-publish EOI form's Word-document and eRecruit-link asset types. For a link asset, it keeps the hidden `#link_0_206` asset name synchronized as the eRecruit URL, Designation, Position title, or Agency changes, and refreshes it when returning to the link tab. The generated name is the `RTF` prefix and numeric `rtfId` from the URL, followed by selected Designation option values, Position title, and Agency option value, separated by spaces. For example: `RTF 123456 AO2 Admin Officer DCDD`.
+
+The link URL validator currently requires the `rtfId` query value to contain exactly six digits.
 
 ---
 

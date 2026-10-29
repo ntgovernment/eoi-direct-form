@@ -73,6 +73,7 @@ const ADVERTISE_STATE_MESSAGES = {
         activeWrapper = newActive;
         assetType = activeWrapper.id.match(/type_([a-z_]+)$/)?.[1];
         sessionStorage.setItem('eoi-tab', `#${activeWrapper.id}_tab a`);
+        if (assetType === 'link') updateLinkName();
         // revalidate when switching tabs
         if (validateHasEverRan) validate();
       }
@@ -186,9 +187,25 @@ const ADVERTISE_STATE_MESSAGES = {
     const linkName = $(SELECTORS.link.name).attr('required', null);
     const linkUrl = $(SELECTORS.link.url);
     const rtfid = $(SELECTORS.rtfid);
-    $('body').on('input', SELECTORS.position, (event) => {
-      linkName.val(event.target.value);
-    });
+    const updateLinkName = () => {
+      const rtfIdValue = linkUrl.val().match(/[?&]rtfId=(\d+)/i)?.[1];
+      const designations = $(SELECTORS.designation, activeWrapper).val() ?? [];
+      const position = $(SELECTORS.position, activeWrapper).val().trim();
+      const agency = $(SELECTORS.agency, activeWrapper).val().trim();
+      const titleParts = [
+        rtfIdValue && `RTF ${rtfIdValue}`,
+        ...designations,
+        position,
+        agency
+      ];
+      linkName.val(titleParts.filter(Boolean).join(' '));
+    };
+    $('body').on(
+      'input change',
+      [SELECTORS.link.url, SELECTORS.designation, SELECTORS.position, SELECTORS.agency].join(','),
+      updateLinkName
+    );
+    updateLinkName();
     const linkHintUrl = $(`<span>${eRecruitURL}</span>`);
     const linkHintID = $('<strong>123456</strong>');
     $('#linkUrlHint').append(linkHintUrl,linkHintID);
