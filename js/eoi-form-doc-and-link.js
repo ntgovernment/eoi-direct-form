@@ -18,7 +18,7 @@ const SELECTORS = {
   file: '[name="word_doc_0"]',
   rtfid: '#metadata_field_text_998904_link_value',
   link: {
-    name: '#link_0_206',
+    name: 'input[name="link_0_206"]',
     url: '#link_0_207'
   }
 };
