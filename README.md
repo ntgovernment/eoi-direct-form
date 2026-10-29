@@ -15,7 +15,7 @@ eoi-direct-form/
 ├── js/
 │   ├── eoi-form.js          # Shared form behaviour and variant registration
 │   ├── eoi-form-doc.js      # EOI document-upload validation
-│   ├── eoi-form-link.js     # eRecruit URL validation
+│   ├── eoi-form-link.js     # eRecruit URL validation and Link name generation
 │   ├── eoi-form.test.cjs    # Node regression tests
 │   └── eoi-form-doc-and-link.js # Separate combined-tab implementation
 ├── css/
@@ -57,8 +57,13 @@ The EOI variant requires an attachment in `input[name="word_doc_0"]` and uses
 `#documentation-warning`. The link variant requires an absolute HTTP or HTTPS
 URL in `#link_0_207` and uses `#link-warning`; it does not require an upload.
 It does not restrict the URL hostname or require a particular job-ID format.
-The link content templates use `%details-S_details%` to render Matrix's link
-details; confirm that the link schema renders `#link_0_207` when deploying.
+The link variant also generates the hidden Matrix Link name field `#link_0_206`
+as `RTF {rtfId} {designation} {position title} {agency}`. It reads `rtfId`
+from the URL query string, uses selected option values for Designation and
+Agency, includes multiple Designations in option order, and updates the name
+when any source field changes. Empty values are omitted. The link content
+templates use `%details-S_details%` to render Matrix's link details; confirm
+that the link schema renders both `#link_0_207` and `#link_0_206` when deploying.
 
 Run the focused validation tests with:
 
@@ -87,12 +92,22 @@ Start the local dev server:
 npm run dev
 ```
 
-Vite normally starts at `http://localhost:5173`; use the URL printed in the terminal if that port is occupied. There is no `index.html` redirect. The current Vite configuration may open that missing path automatically, so navigate directly to an available local snapshot:
+Vite normally starts at `http://localhost:5173`; use the URL printed in the
+terminal if that port is occupied. The Vite configuration opens the eRecruit
+snapshot directly. Navigate to a snapshot URL if the browser did not open it:
 
 - EOI: `http://localhost:5173/Direct%20publish%20an%20EOI%20_%20NTG%20Central.html`
 - eRecruit: `http://localhost:5173/Direct%20publish%20an%20eRecruit%20link%20_%20NTG%20Central.html`
 
-Each snapshot must load `/css/eoi-form.css`, then `/js/eoi-form.js` followed by its matching variant script after jQuery. Reload the page after JavaScript edits. Matrix template placeholders in `html/` require CMS rendering and are not standalone preview pages.
+The `Direct publish*` snapshots and their `_files/` folders are gitignored local
+copies, so they are not present in a fresh clone. Obtain the snapshots separately
+to preview the full pages; `html/` contains Matrix templates with server-side
+placeholders and is not a standalone substitute. If the browser reports a
+connection error, first confirm that `npm run dev` is still running and check
+the URL Vite printed. A Vite 404 at that URL instead indicates the requested
+snapshot file is unavailable. Each snapshot should load `/css/eoi-form.css`,
+then `/js/eoi-form.js` followed by its matching variant script after jQuery.
+Reload the page after JavaScript edits.
 
 ---
 

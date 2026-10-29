@@ -21,10 +21,21 @@ function loadVariant(filename, fields) {
 function field(value = "") {
   return {
     value,
-    val() { return this.value; },
+    val(value) {
+      if (arguments.length) {
+        this.value = value;
+        return this;
+      }
+      return this.value;
+    },
     toggle(visible) { this.visible = visible; },
     toggleClass(name, enabled) { this.error = enabled; },
-    on(events, handler) { this.events = events; this.handler = handler; },
+    on(events, handler) {
+      this.events = events;
+      this.handlers ??= [];
+      this.handlers.push(handler);
+      this.handler = handler;
+    },
   };
 }
 
@@ -98,6 +109,10 @@ test("link variant validates URLs without accessing a file field", () => {
   const warning = field();
   const variant = loadVariant("eoi-form-link.js", {
     "#link_0_207": input,
+    "#link_0_206": field(),
+    "#metadata_field_select_445634": field([]),
+    "#metadata_field_text_445504_value": field(),
+    "#metadata_field_select_445640": field(),
     "#link-warning": warning,
   });
   for (const value of ["", "   ", "not a URL", "/relative", "javascript:alert(1)", "ftp://jobs.nt.gov.au"]) {
@@ -115,5 +130,52 @@ test("link variant validates URLs without accessing a file field", () => {
   const update = () => {};
   variant.setup(update);
   assert.equal(input.events, "input change");
-  assert.equal(input.handler, update);
+  assert.equal(input.handlers[0], update);
+});
+
+test("link variant keeps the hidden link name synchronized with form values", () => {
+  const input = field("https://jobs.nt.gov.au/Home/JobDetails?rtfId=12345");
+  const linkName = field();
+  const designation = field(["AO2"]);
+  const positionTitle = field("Admin Officer");
+  const agency = field("DCDD");
+  const variant = loadVariant("eoi-form-link.js", {
+    "#link_0_207": input,
+    "#link_0_206": linkName,
+    "#metadata_field_select_445634": designation,
+    "#metadata_field_text_445504_value": positionTitle,
+    "#metadata_field_select_445640": agency,
+    "#link-warning": field(),
+  });
+
+  variant.setup(() => {});
+  assert.equal(linkName.value, "RTF 12345 AO2 Admin Officer DCDD");
+
+  input.value = "https://jobs.nt.gov.au/Home/JobDetails?rtfId=67890";
+  input.handlers[1]();
+  assert.equal(linkName.value, "RTF 67890 AO2 Admin Officer DCDD");
+
+  designation.value = ["AO2", "AO3"];
+  designation.handler();
+  assert.equal(linkName.value, "RTF 67890 AO2 AO3 Admin Officer DCDD");
+
+  positionTitle.value = "Senior Admin Officer";
+  positionTitle.handler();
+  assert.equal(linkName.value, "RTF 67890 AO2 AO3 Senior Admin Officer DCDD");
+
+  agency.value = "DET";
+  agency.handler();
+  assert.equal(linkName.value, "RTF 67890 AO2 AO3 Senior Admin Officer DET");
+
+  input.value = "https://jobs.nt.gov.au/Home/JobDetails";
+  input.handlers[1]();
+  assert.equal(linkName.value, "AO2 AO3 Senior Admin Officer DET");
+
+  designation.value = [];
+  designation.handler();
+  positionTitle.value = "";
+  positionTitle.handler();
+  agency.value = "";
+  agency.handler();
+  assert.equal(linkName.value, "");
 });
