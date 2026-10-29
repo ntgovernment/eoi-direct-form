@@ -64,6 +64,11 @@ Agency, includes multiple Designations in option order, and updates the name
 when any source field changes. Empty values are omitted. The link content
 templates use `%details-S_details%` to render Matrix's link details; confirm
 that the link schema renders both `#link_0_207` and `#link_0_206` when deploying.
+The Link name input is required by Matrix even though it is inside a hidden
+container. The link variant script must load and populate it before submission;
+otherwise native browser validation blocks Matrix's submit handler because the
+invalid required control cannot be focused. The shared `All fields filled`
+message does not check this browser-level constraint.
 
 Run the focused validation tests with:
 
@@ -121,7 +126,7 @@ The reference HTML files are snapshots of the live Matrix pages. For them to wor
 | jQuery                         | Loaded by Matrix from `https://ntgcentral-dev.nt.gov.au/…/jquery-3.4.1.min.js`                      | Loaded from local `_files/jquery-3.4.1.min.js`                            |
 | Stylesheet loading            | Git File Bridge URL for `css/eoi-form.css` | `<link rel="stylesheet" href="/css/eoi-form.css">` |
 | Script loading                | Git File Bridge URLs for the shared script and one variant | Plain `<script>` tags for `/js/eoi-form.js`, then `/js/eoi-form-doc.js` or `/js/eoi-form-link.js` |
-| `JSON.parse` in status toolbar | `JSON.parse('')` (Matrix renders an empty string — valid in its server context)                     | `JSON.parse('{}')` (prevents `SyntaxError: Unexpected end of JSON input`) |
+| `JSON.parse` in status toolbar | `JSON.parse('')` throws `SyntaxError: Unexpected end of JSON input` when evaluated in the browser | Use a valid value such as `JSON.parse('{}')` in a local snapshot |
 
 ### FontAwesome dev kit
 
@@ -217,6 +222,7 @@ These are the Matrix-generated field IDs targeted by `eoi-form.js` and `eoi-form
 | — Agency-specific checkbox       | `<input checkbox>`       | `metadata_field_select_446182_{AGENCY_CODE}`           |                 |
 | File upload                      | `<input file>`           | inside `div[data-ref="file-upload"]`                   |                 |
 | eRecruit URL                     | `<input text>`           | `link_0_207`                                           |                 |
+| eRecruit Link name               | `<input text>` (required, hidden) | `link_0_206`                                     |                 |
 | Submit button                    | `<input button>`         | `sq_commit_button`                                     |                 |
 | Close date warning               | `<div>`                  | `#date-close-warning`                                  |                 |
 | Error alert banner               | `<div>`                  | `.ntgc-form-alerts.ntgc-form-alerts--error`            |                 |
